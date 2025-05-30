@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang cá nhân - Diễn đàn Sinh viên</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+    <div class="page-container">
+        <!-- Header -->
+        <header class="main-header">
+            <div class="container">
+                <div class="logo">
+                    <a href="index.html">
+                        <h1>Diễn đàn SV</h1>
+                    </a>
+                </div>
+                <div class="search-bar">
+                    <form id="search-form">
+                        <input type="text" id="search-input" placeholder="Tìm kiếm bài viết...">
+                        <button type="submit"><i class="fas fa-search"></i></button>
+                    </form>
+                </div>
+                <nav class="main-nav">
+                    <ul class="nav-links">
+                        <li><a href="index.html">Trang chủ</a></li>
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle">Danh mục <i class="fas fa-chevron-down"></i></a>
+                            <ul class="dropdown-menu" id="categories-menu">
+                                <!-- Categories will be loaded here -->
+                            </ul>
+                        </li>
+                        <li><a href="#" id="create-post-btn">Đăng bài</a></li>
+                    </ul>
+                </nav>
+                <div class="user-actions" id="user-actions">
+                    <!-- User actions will be loaded here based on authentication status -->
+                </div>
+                <div class="mobile-menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="container">
+                <div class="profile-container">
+                    <div class="profile-header">
+                        <div class="profile-cover" id="profile-cover">
+                            <!-- Cover image will be loaded here -->
+                        </div>
+                        <div class="profile-avatar" id="profile-avatar">
+                            <!-- Avatar will be loaded here -->
+                        </div>
+                        <div class="profile-info">
+                            <h2 id="profile-name">Đang tải...</h2>
+                            <p id="profile-role">Thành viên</p>
+                            <div class="profile-stats">
+                                <div class="stat">
+                                    <span class="stat-value" id="posts-count">0</span>
+                                    <span class="stat-label">Bài viết</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-value" id="comments-count">0</span>
+                                    <span class="stat-label">Bình luận</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-value" id="reputation-points">0</span>
+                                    <span class="stat-label">Điểm uy tín</span>
+                                </div>
+                            </div>
+                            <div class="profile-badges" id="profile-badges">
+                                <!-- Badges will be loaded here -->
+                            </div>
+                        </div>
+                        <div class="profile-actions" id="profile-actions">
+                            <!-- Profile actions will be loaded here -->
+                        </div>
+                    </div>
+                    <div class="profile-content">
+                        <div class="profile-tabs">
+                            <ul class="tabs">
+                                <li class="active" data-tab="posts">Bài viết</li>
+                                <li data-tab="comments">Bình luận</li>
+                                <li data-tab="about">Giới thiệu</li>
+                                <li data-tab="settings" id="settings-tab" style="display: none;">Cài đặt</li>
+                            </ul>
+                        </div>
+                        <div class="tab-content">
+                            <div class="tab-pane active" id="posts-tab">
+                                <div class="posts-list" id="user-posts">
+                                    <div class="loading-spinner" id="user-posts-loading">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                        <span>Đang tải bài viết...</span>
+                                    </div>
+                                    <!-- User posts will be loaded here -->
+                                </div>
+                            </div>
+                            <div class="tab-pane" id="comments-tab">
+                                <div class="comments-list" id="user-comments">
+                                    <div class="loading-spinner" id="user-comments-loading">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                        <span>Đang tải bình luận...</span>
+                                    </div>
+                                    <!-- User comments will be loaded here -->
+                                </div>
+                            </div>
+                            <div class="tab-pane" id="about-tab">
+                                <div class="about-content" id="user-about">
+                                    <div class="loading-spinner" id="user-about-loading">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                        <span>Đang tải thông tin...</span>
+                                    </div>
+                                    <!-- User about will be loaded here -->
+                                </div>
+                            </div>
+                            <div class="tab-pane" id="settings-tab">
+                                <div class="settings-form-container">
+                                    <form id="profile-settings-form">
+                                        <div class="form-group">
+                                            <label for="settings-fullname">Họ và tên</label>
+                                            <input type="text" id="settings-fullname" name="fullname">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="settings-avatar">Ảnh đại diện</label>
+                                            <input type="file" id="settings-avatar" name="avatar" accept="image/*">
+                                            <div class="avatar-preview" id="avatar-preview">
+                                                <!-- Avatar preview will be loaded here -->
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="settings-cover">Ảnh bìa</label>
+                                            <input type="file" id="settings-cover" name="cover" accept="image/*">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="settings-bio">Giới thiệu</label>
+                                            <textarea id="settings-bio" name="bio" rows="5"></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="settings-password">Mật khẩu mới</label>
+                                            <input type="password" id="settings-password" name="password">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="settings-confirm-password">Xác nhận mật khẩu mới</label>
+                                            <input type="password" id="settings-confirm-password" name="confirm-password">
+                                        </div>
+                                        <div id="settings-error" class="form-error" style="display: none;"></div>
+                                        <div id="settings-success" class="form-success" style="display: none;"></div>
+                                        <div class="form-actions">
+                                            <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-section">
+                        <h3>Diễn đàn Sinh viên</h3>
+                        <p>Nơi kết nối, chia sẻ và học hỏi của cộng đồng sinh viên.</p>
+                    </div>
+                    <div class="footer-section">
+                        <h3>Liên kết</h3>
+                        <ul>
+                            <li><a href="index.html">Trang chủ</a></li>
+                            <li><a href="about.html">Giới thiệu</a></li>
+                            <li><a href="rules.html">Nội quy</a></li>
+                            <li><a href="contact.html">Liên hệ</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h3>Theo dõi chúng tôi</h3>
+                        <div class="social-links">
+                            <a href="#"><i class="fab fa-facebook"></i></a>
+                            <a href="#"><i class="fab fa-twitter"></i></a>
+                            <a href="#"><i class="fab fa-instagram"></i></a>
+                            <a href="#"><i class="fab fa-youtube"></i></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p>&copy; 2023 Diễn đàn Sinh viên. Tất cả quyền được bảo lưu.</p>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Notification Panel -->
+        <div class="notification-panel" id="notification-panel">
+            <div class="notification-header">
+                <h3>Thông báo</h3>
+                <button id="mark-all-read">Đánh dấu tất cả đã đọc</button>
+                <button class="close-notifications"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="notification-list" id="notification-list">
+                <!-- Notifications will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Modal Container -->
+        <div class="modal-container" id="modal-container"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/profile.js"></script>
+    <script src="js/posts.js"></script>
+    <script src="js/comments.js"></script>
+    <script src="js/notifications.js"></script>
+</body>
+</html>

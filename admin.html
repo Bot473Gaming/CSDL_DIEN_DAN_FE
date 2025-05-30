@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản trị - Diễn đàn Sinh viên</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <div class="page-container">
+        <!-- Header -->
+        <header class="main-header">
+            <div class="container">
+                <div class="logo">
+                    <a href="index.html">
+                        <h1>Diễn đàn SV</h1>
+                    </a>
+                </div>
+                <div class="admin-title">
+                    <h2>Quản trị viên</h2>
+                </div>
+                <div class="user-actions" id="user-actions">
+                    <!-- User actions will be loaded here based on authentication status -->
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="container">
+                <div class="admin-grid">
+                    <!-- Admin Sidebar -->
+                    <aside class="admin-sidebar">
+                        <div class="admin-menu">
+                            <ul>
+                                <li class="active" data-tab="dashboard"><i class="fas fa-tachometer-alt"></i> Tổng quan</li>
+                                <li data-tab="users"><i class="fas fa-users"></i> Quản lý người dùng</li>
+                                <li data-tab="posts"><i class="fas fa-file-alt"></i> Quản lý bài viết</li>
+                                <li data-tab="comments"><i class="fas fa-comments"></i> Quản lý bình luận</li>
+                                <li data-tab="categories"><i class="fas fa-folder"></i> Quản lý danh mục</li>
+                                <li data-tab="tags"><i class="fas fa-tags"></i> Quản lý thẻ</li>
+                                <li data-tab="reports"><i class="fas fa-flag"></i> Báo cáo vi phạm</li>
+                                <li data-tab="settings"><i class="fas fa-cog"></i> Cài đặt diễn đàn</li>
+                            </ul>
+                        </div>
+                    </aside>
+
+                    <!-- Admin Content -->
+                    <section class="admin-content">
+                        <div class="admin-tab-content">
+                            <!-- Dashboard Tab -->
+                            <div class="admin-tab-pane active" id="dashboard-tab">
+                                <h3>Tổng quan</h3>
+                                <div class="dashboard-stats">
+                                    <div class="stat-card">
+                                        <div class="stat-icon"><i class="fas fa-users"></i></div>
+                                        <div class="stat-info">
+                                            <h4>Người dùng</h4>
+                                            <p id="total-users">0</p>
+                                        </div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
+                                        <div class="stat-info">
+                                            <h4>Bài viết</h4>
+                                            <p id="total-posts">0</p>
+                                        </div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-icon"><i class="fas fa-comments"></i></div>
+                                        <div class="stat-info">
+                                            <h4>Bình luận</h4>
+                                            <p id="total-comments">0</p>
+                                        </div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-icon"><i class="fas fa-flag"></i></div>
+                                        <div class="stat-info">
+                                            <h4>Báo cáo</h4>
+                                            <p id="total-reports">0</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="dashboard-charts">
+                                    <div class="chart-container">
+                                        <h4>Hoạt động trong 7 ngày qua</h4>
+                                        <div class="chart" id="activity-chart">
+                                            <!-- Chart will be loaded here -->
+                                        </div>
+                                    </div>
+                                    <div class="chart-container">
+                                        <h4>Phân bố bài viết theo danh mục</h4>
+                                        <div class="chart" id="categories-chart">
+                                            <!-- Chart will be loaded here -->
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="recent-activities">
+                                    <h4>Hoạt động gần đây</h4>
+                                    <div class="activity-list" id="recent-activities-list">
+                                        <!-- Recent activities will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Users Tab -->
+                            <div class="admin-tab-pane" id="users-tab">
+                                <h3>Quản lý người dùng</h3>
+                                <div class="admin-actions">
+                                    <div class="admin-search">
+                                        <input type="text" id="search-users" placeholder="Tìm kiếm người dùng...">
+                                        <button><i class="fas fa-search"></i></button>
+                                    </div>
+                                    <div class="admin-filters">
+                                        <select id="filter-users-role">
+                                            <option value="">Tất cả vai trò</option>
+                                            <option value="admin">Quản trị viên</option>
+                                            <option value="moderator">Điều hành viên</option>
+                                            <option value="member">Thành viên</option>
+                                        </select>
+                                        <select id="filter-users-status">
+                                            <option value="">Tất cả trạng thái</option>
+                                            <option value="active">Hoạt động</option>
+                                            <option value="inactive">Không hoạt động</option>
+                                            <option value="banned">Bị cấm</option>
+                                        </select>
+                                    </div>
+                                    <button class="btn btn-primary" id="add-user-btn"><i class="fas fa-plus"></i> Thêm người dùng</button>
+                                </div>
+                                <div class="admin-table-container">
+                                    <table class="admin-table" id="users-table">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Họ tên</th>
+                                                <th>Email</th>
+                                                <th>Vai trò</th>
+                                                <th>Trạng thái</th>
+                                                <th>Ngày tham gia</th>
+                                                <th>Thao tác</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="users-table-body">
+                                            <!-- Users will be loaded here -->
+                                        </tbody>
+                                    </table>
+                                    <div class="admin-pagination" id="users-pagination">
+                                        <!-- Pagination will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Other tabs will be similar structure -->
+                            <!-- Posts Tab -->
+                            <div class="admin-tab-pane" id="posts-tab">
+                                <h3>Quản lý bài viết</h3>
+                                <!-- Content similar to users tab -->
+                            </div>
+
+                            <!-- Comments Tab -->
+                            <div class="admin-tab-pane" id="comments-tab">
+                                <h3>Quản lý bình luận</h3>
+                                <!-- Content similar to users tab -->
+                            </div>
+
+                            <!-- Categories Tab -->
+                            <div class="admin-tab-pane" id="categories-tab">
+                                <h3>Quản lý danh mục</h3>
+                                <!-- Content similar to users tab -->
+                            </div>
+
+                            <!-- Tags Tab -->
+                            <div class="admin-tab-pane" id="tags-tab">
+                                <h3>Quản lý thẻ</h3>
+                                <!-- Content similar to users tab -->
+                            </div>
+
+                            <!-- Reports Tab -->
+                            <div class="admin-tab-pane" id="reports-tab">
+                                <h3>Báo cáo vi phạm</h3>
+                                <!-- Content similar to users tab -->
+                            </div>
+
+                            <!-- Settings Tab -->
+                            <div class="admin-tab-pane" id="settings-tab">
+                                <h3>Cài đặt diễn đàn</h3>
+                                <!-- Content similar to users tab -->
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <div class="container">
+                <div class="footer-bottom">
+                    <p>&copy; 2023 Diễn đàn Sinh viên. Tất cả quyền được bảo lưu.</p>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Modal Container -->
+        <div class="modal-container" id="modal-container"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

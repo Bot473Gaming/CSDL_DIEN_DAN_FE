@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diễn đàn Sinh viên</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+    <div class="page-container">
+        <!-- Header -->
+        <header class="main-header">
+            <div class="container">
+                <div class="logo">
+                    <a href="index.html">
+                        <h1>Diễn đàn SV</h1>
+                    </a>
+                </div>
+                <div class="search-bar">
+                    <form id="search-form">
+                        <input type="text" id="search-input" placeholder="Tìm kiếm bài viết...">
+                        <button type="submit"><i class="fas fa-search"></i></button>
+                    </form>
+                </div>
+                <nav class="main-nav">
+                    <ul class="nav-links">
+                        <li><a href="index.html" class="active">Trang chủ</a></li>
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle">Danh mục <i class="fas fa-chevron-down"></i></a>
+                            <ul class="dropdown-menu" id="categories-menu">
+                                <!-- Categories will be loaded here -->
+                            </ul>
+                        </li>
+                        <li><a href="#" id="create-post-btn">Đăng bài</a></li>
+                    </ul>
+                </nav>
+                <div class="user-actions" id="user-actions">
+                    <!-- User actions will be loaded here based on authentication status -->
+                </div>
+                <div class="mobile-menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="container">
+                <div class="content-grid">
+                    <!-- Sidebar -->
+                    <aside class="sidebar">
+                        <div class="sidebar-section">
+                            <h3>Danh mục</h3>
+                            <ul class="category-list" id="sidebar-categories">
+                                <!-- Categories will be loaded here -->
+                            </ul>
+                        </div>
+                        <div class="sidebar-section">
+                            <h3>Thẻ phổ biến</h3>
+                            <div class="tag-cloud" id="popular-tags">
+                                <!-- Popular tags will be loaded here -->
+                            </div>
+                        </div>
+                        <div class="sidebar-section" id="top-users-section">
+                            <h3>Thành viên tích cực</h3>
+                            <ul class="user-list" id="top-users">
+                                <!-- Top users will be loaded here -->
+                            </ul>
+                        </div>
+                    </aside>
+
+                    <!-- Posts Area -->
+                    <section class="posts-area">
+                        <div class="posts-header">
+                            <h2>Bài viết mới nhất</h2>
+                            <div class="posts-filter">
+                                <select id="sort-posts">
+                                    <option value="newest">Mới nhất</option>
+                                    <option value="popular">Phổ biến</option>
+                                    <option value="most-commented">Nhiều bình luận</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="posts-list" id="posts-container">
+                            <!-- Posts will be loaded here -->
+                            <div class="loading-spinner" id="posts-loading">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <span>Đang tải bài viết...</span>
+                            </div>
+                        </div>
+                        <div class="pagination" id="posts-pagination">
+                            <!-- Pagination will be loaded here -->
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-section">
+                        <h3>Diễn đàn Sinh viên</h3>
+                        <p>Nơi kết nối, chia sẻ và học hỏi của cộng đồng sinh viên.</p>
+                    </div>
+                    <div class="footer-section">
+                        <h3>Liên kết</h3>
+                        <ul>
+                            <li><a href="index.html">Trang chủ</a></li>
+                            <li><a href="about.html">Giới thiệu</a></li>
+                            <li><a href="rules.html">Nội quy</a></li>
+                            <li><a href="contact.html">Liên hệ</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h3>Theo dõi chúng tôi</h3>
+                        <div class="social-links">
+                            <a href="#"><i class="fab fa-facebook"></i></a>
+                            <a href="#"><i class="fab fa-twitter"></i></a>
+                            <a href="#"><i class="fab fa-instagram"></i></a>
+                            <a href="#"><i class="fab fa-youtube"></i></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p>&copy; 2023 Diễn đàn Sinh viên. Tất cả quyền được bảo lưu.</p>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Notification Panel -->
+        <div class="notification-panel" id="notification-panel">
+            <div class="notification-header">
+                <h3>Thông báo</h3>
+                <button id="mark-all-read">Đánh dấu tất cả đã đọc</button>
+                <button class="close-notifications"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="notification-list" id="notification-list">
+                <!-- Notifications will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Modal Container -->
+        <div class="modal-container" id="modal-container"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/posts.js"></script>
+    <script src="js/comments.js"></script>
+    <script src="js/votes.js"></script>
+    <script src="js/notifications.js"></script>
+</body>
+</html>

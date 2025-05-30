@@ -1,0 +1,474 @@
+/* Admin Dashboard Styles */
+.admin-title {
+  margin-left: 20px;
+}
+
+.admin-title h2 {
+  font-size: 20px;
+  color: var(--primary-color);
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: 30px;
+}
+
+/* Admin Sidebar */
+.admin-sidebar {
+  background-color: var(--bg-color);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  height: fit-content;
+  position: sticky;
+  top: calc(var(--header-height) + 30px);
+}
+
+.admin-menu ul li {
+  padding: 15px 20px;
+  cursor: pointer;
+  transition: var(--transition);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+}
+
+.admin-menu ul li:last-child {
+  border-bottom: none;
+}
+
+.admin-menu ul li i {
+  margin-right: 10px;
+  width: 20px;
+  text-align: center;
+}
+
+.admin-menu ul li:hover {
+  background-color: var(--bg-light);
+  color: var(--primary-color);
+}
+
+.admin-menu ul li.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* Admin Content */
+.admin-content {
+  background-color: var(--bg-color);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 30px;
+}
+
+.admin-tab-pane {
+  display: none;
+}
+
+.admin-tab-pane.active {
+  display: block;
+}
+
+.admin-tab-pane h3 {
+  margin-bottom: 20px;
+  font-size: 24px;
+  color: var(--text-color);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 10px;
+}
+
+/* Dashboard Stats */
+.dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  background-color: var(--bg-light);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  box-shadow: var(--shadow);
+}
+
+.stat-icon {
+  width: 60px;
+  height: 60px;
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin-right: 15px;
+}
+
+.stat-info h4 {
+  font-size: 16px;
+  color: var(--text-light);
+  margin-bottom: 5px;
+}
+
+.stat-info p {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+/* Dashboard Charts */
+.dashboard-charts {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.chart-container {
+  background-color: var(--bg-light);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+
+.chart-container h4 {
+  margin-bottom: 15px;
+  font-size: 18px;
+  color: var(--text-color);
+}
+
+.chart {
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-light);
+}
+
+/* Recent Activities */
+.recent-activities {
+  background-color: var(--bg-light);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+
+.recent-activities h4 {
+  margin-bottom: 15px;
+  font-size: 18px;
+  color: var(--text-color);
+}
+
+.activity-item {
+  padding: 15px 0;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-icon {
+  width: 40px;
+  height: 40px;
+  background-color: var(--bg-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 15px;
+  color: var(--primary-color);
+}
+
+.activity-content {
+  flex: 1;
+}
+
+.activity-content p {
+  margin-bottom: 5px;
+}
+
+.activity-content .activity-time {
+  font-size: 12px;
+  color: var(--text-light);
+}
+
+/* Admin Actions */
+.admin-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.admin-search {
+  display: flex;
+  position: relative;
+  width: 300px;
+}
+
+.admin-search input {
+  width: 100%;
+  padding: 10px 15px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  outline: none;
+}
+
+.admin-search button {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 40px;
+  background: none;
+  border: none;
+  color: var(--text-lighter);
+  cursor: pointer;
+}
+
+.admin-filters {
+  display: flex;
+  gap: 10px;
+}
+
+.admin-filters select {
+  padding: 10px 15px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  outline: none;
+  cursor: pointer;
+}
+
+/* Admin Table */
+.admin-table-container {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 15px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.admin-table th {
+  background-color: var(--bg-light);
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.admin-table tbody tr:hover {
+  background-color: var(--bg-light);
+}
+
+.admin-table .user-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 10px;
+}
+
+.admin-table .user-name {
+  display: flex;
+  align-items: center;
+}
+
+.admin-table .status {
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 12px;
+  text-align: center;
+}
+
+.admin-table .status.active {
+  background-color: rgba(40, 167, 69, 0.1);
+  color: var(--success-color);
+}
+
+.admin-table .status.inactive {
+  background-color: rgba(108, 117, 125, 0.1);
+  color: var(--text-light);
+}
+
+.admin-table .status.banned {
+  background-color: rgba(220, 53, 69, 0.1);
+  color: var(--danger-color);
+}
+
+.admin-table .actions {
+  display: flex;
+  gap: 10px;
+}
+
+.admin-table .actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-light);
+  transition: var(--transition);
+}
+
+.admin-table .actions button:hover {
+  color: var(--primary-color);
+}
+
+.admin-table .actions button.delete:hover {
+  color: var(--danger-color);
+}
+
+/* Admin Pagination */
+.admin-pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.admin-pagination-item {
+  margin: 0 5px;
+}
+
+.admin-pagination-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.admin-pagination-link:hover,
+.admin-pagination-link.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* Admin Forms */
+.admin-form {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.admin-form .form-group {
+  margin-bottom: 20px;
+}
+
+.admin-form .form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.admin-form .form-group input,
+.admin-form .form-group select,
+.admin-form .form-group textarea {
+  width: 100%;
+  padding: 10px 15px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  outline: none;
+}
+
+.admin-form .form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.admin-form .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Responsive Admin */
+@media (max-width: 992px) {
+  .dashboard-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dashboard-charts {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-sidebar {
+    position: static;
+    margin-bottom: 20px;
+  }
+
+  .admin-menu ul {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .admin-menu ul li {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    border-bottom: none;
+    border-right: 1px solid var(--border-color);
+  }
+
+  .admin-menu ul li:last-child {
+    border-right: none;
+  }
+
+  .admin-menu ul li i {
+    display: block;
+    margin: 0 auto 5px;
+  }
+
+  .admin-actions {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+
+  .admin-search {
+    width: 100%;
+  }
+
+  .admin-filters {
+    width: 100%;
+  }
+
+  .admin-filters select {
+    flex: 1;
+  }
+}
+
+@media (max-width: 576px) {
+  .dashboard-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-content {
+    padding: 15px;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 10px;
+  }
+}
