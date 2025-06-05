@@ -10,11 +10,11 @@ const relatedPosts = document.getElementById("related-posts")
 const createPostForm = document.getElementById("create-post-form")
 
 // API URL
-const API_URL = "https://forum-service-csdl.onrender.com"
+const API_URL_post = "https://forum-service-csdl.onrender.com/post"
 
 // Get token and current user
-const token = localStorage.getItem("token")
-const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}")
+const token_post = localStorage.getItem("token")
+const currentUser_post = JSON.parse(localStorage.getItem("currentUser") || "{}")
 
 // Format date function
 function formatDate(dateString) {
@@ -175,7 +175,7 @@ async function loadComments(postId) {
 
     // Render comment form if user is logged in
     if (commentFormContainer) {
-      if (token) {
+      if (token_post) {
         commentFormContainer.innerHTML = `
           <form id="comment-form">
             <div class="form-group">
@@ -253,7 +253,7 @@ function renderComment(comment) {
           </button>
         </div>
         <div class="comment-buttons">
-          ${token ? `
+          ${token_post ? `
             <button class="comment-btn reply-btn" data-id="${comment._id}">
               <i class="fas fa-reply"></i> Trả lời
             </button>
@@ -282,7 +282,7 @@ function renderComment(comment) {
 
 // Submit a new comment
 async function submitComment(postId, content, parentCommentId = null) {
-  if (!token) {
+  if (!token_post) {
     showLoginModal()
     return
   }
@@ -297,7 +297,7 @@ async function submitComment(postId, content, parentCommentId = null) {
       commentData.parentCommentId = parentCommentId
     }
     
-    const newComment = await api.createComment(commentData, token)
+    const newComment = await api.createComment(commentData, token_post)
 
     // Reload comments to show the new comment
     loadComments(postId)
@@ -382,17 +382,17 @@ function setupPostDetailActions(post) {
 
   if (upvoteBtn && downvoteBtn && voteCount) {
     upvoteBtn.addEventListener("click", async () => {
-      if (!token) {
+      if (!token_post) {
         showLoginModal()
         return
       }
 
       try {
-        const response = await fetch(`${API_URL}/posts/${post._id}/vote`, {
+        const response = await fetch(`${API_URL_post}/posts/${post._id}/vote`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${token_post}`,
           },
           body: JSON.stringify({ vote: post.userVote === 1 ? 0 : 1 }),
         })
@@ -412,17 +412,17 @@ function setupPostDetailActions(post) {
     })
 
     downvoteBtn.addEventListener("click", async () => {
-      if (!token) {
+      if (!token_post) {
         showLoginModal()
         return
       }
 
       try {
-        const response = await fetch(`${API_URL}/posts/${post._id}/vote`, {
+        const response = await fetch(`${API_URL_post}/posts/${post._id}/vote`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${token_post}`,
           },
           body: JSON.stringify({ vote: post.userVote === -1 ? 0 : -1 }),
         })
@@ -446,16 +446,16 @@ function setupPostDetailActions(post) {
   const savePostBtn = document.querySelector(".save-post")
   if (savePostBtn) {
     savePostBtn.addEventListener("click", async () => {
-      if (!token) {
+      if (!token_post) {
         showLoginModal()
         return
       }
 
       try {
-        const response = await fetch(`${API_URL}/posts/${post._id}/save`, {
+        const response = await fetch(`${API_URL_post}/posts/${post._id}/save`, {
           method: post.isSaved ? "DELETE" : "POST",
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${token_post}`,
           },
         })
 
@@ -502,7 +502,7 @@ function setupPostDetailActions(post) {
   const reportPostBtn = document.querySelector(".report-post")
   if (reportPostBtn) {
     reportPostBtn.addEventListener("click", () => {
-      if (!token) {
+      if (!token_post) {
         showLoginModal()
         return
       }
@@ -518,7 +518,7 @@ function setupCommentActions(postId) {
   const voteButtons = document.querySelectorAll(".comment-vote button")
   voteButtons.forEach((button) => {
     button.addEventListener("click", async () => {
-      if (!token) {
+      if (!token_post) {
         showLoginModal()
         return
       }
@@ -530,11 +530,11 @@ function setupCommentActions(postId) {
       const downvoteBtn = button.parentElement.querySelector(".downvote")
 
       try {
-        const response = await fetch(`${API_URL}/comments/${commentId}/vote`, {
+        const response = await fetch(`${API_URL_post}/comments/${commentId}/vote`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${token_post}`,
           },
           body: JSON.stringify({ vote: isUpvote ? 1 : -1 }),
         })
@@ -558,7 +558,7 @@ function setupCommentActions(postId) {
   const replyButtons = document.querySelectorAll(".reply-btn")
   replyButtons.forEach((button) => {
     button.addEventListener("click", () => {
-      if (!token) {
+      if (!token_post) {
         showLoginModal()
         return
       }
@@ -601,11 +601,11 @@ function setupCommentActions(postId) {
         if (!content) return
 
         try {
-          const response = await fetch(`${API_URL}/comments/${commentId}/replies`, {
+          const response = await fetch(`${API_URL_post}/comments/${commentId}/replies`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
+              Authorization: `Bearer ${token_post}`,
             },
             body: JSON.stringify({ content }),
           })
@@ -627,7 +627,7 @@ function setupCommentActions(postId) {
   const reportButtons = document.querySelectorAll(".report-btn")
   reportButtons.forEach((button) => {
     button.addEventListener("click", () => {
-      if (!token) {
+      if (!token_post) {
         showLoginModal()
         return
       }
@@ -696,11 +696,11 @@ function showReportModal(type, id) {
     const description = form.querySelector("textarea[name='description']").value.trim()
 
     try {
-      const response = await fetch(`${API_URL}/${type}s/${id}/report`, {
+      const response = await fetch(`${API_URL_post}/${type}s/${id}/report`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token_post}`,
         },
         body: JSON.stringify({ reason, description }),
       })
@@ -746,7 +746,7 @@ async function setupCreatePostForm() {
     createPostForm.addEventListener("submit", async (e) => {
       e.preventDefault()
 
-      if (!token) {
+      if (!token_post) {
         showLoginModal()
         return
       }
@@ -760,7 +760,7 @@ async function setupCreatePostForm() {
       }
 
       try {
-        await api.createPost(postData, token)
+        await api.createPost(postData, token_post)
         window.location.href = "index.html"
       } catch (error) {
         console.error("Error creating post:", error)

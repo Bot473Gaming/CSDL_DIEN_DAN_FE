@@ -7,6 +7,13 @@ const RETRY_DELAY = 3000 // 3 seconds
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 const cache = new Map()
 
+//  buildQueryString
+function buildQueryString(params = {}) {
+  return Object.entries(params)
+    .filter(([_, value]) => value !== null && value !== undefined)
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+    .join('&');
+}
 // Fallback mock data
 const MOCK_DATA = {
   categories: [
@@ -141,19 +148,19 @@ async function handleResponse(response) {
 }
 
 // Function to check if the API is available
-async function isApiAvailable() {
-  try {
-    return await $.ajax({
-      url: `${API_URL}/health-check`,
-      method: 'GET',
-      timeout: 2000,
-      crossDomain: true,
-    }).then(() => true).catch(() => false);
-  } catch (error) {
-    console.log("API not available:", error.message);
-    return false;
-  }
-}
+// async function isApiAvailable() {
+//   try {
+//     return await $.ajax({
+//       url: `${API_URL}/health-check`,
+//       method: 'GET',
+//       timeout: 2000,
+//       crossDomain: true,
+//     }).then(() => true).catch(() => false);
+//   } catch (error) {
+//     console.log("API not available:", error.message);
+//     return false;
+//   }
+// }
 
 // Main API call function with retry mechanism
 async function apiCall(endpoint, options = {}, retryCount = 0) {
@@ -425,7 +432,8 @@ const api = {
 
   // Categories
   async getCategories() {
-    return await apiCall('/category')
+    const res = await apiCall('/category');
+    return res.data.categories; // Trả về mảng categories trực tiếp
   },
   
   async getCategory(id) {
@@ -475,8 +483,8 @@ const api = {
 
   // Posts
   async getPosts(params = {}) {
-    const queryString = new URLSearchParams(params).toString()
-    return await apiCall(`/post?${queryString}`)
+    const queryString = buildQueryString(params)
+    return await apiCall(`/post${queryString ? `?${queryString}` : ''}`)
   },
 
   async getPost(postId) {
@@ -539,8 +547,8 @@ const api = {
 
   // Comments
   async getComments(params = {}) {
-    const queryString = new URLSearchParams(params).toString()
-    return await apiCall(`/comment?${queryString}`)
+    const queryString = buildQueryString(params)
+    return await apiCall(`/comment${queryString ? `?${queryString}` : ''}`)
   },
   
   async getComment(id) {
@@ -590,8 +598,8 @@ const api = {
 
   // Votes
   async getVotes(params = {}) {
-    const queryString = new URLSearchParams(params).toString()
-    return await apiCall(`/vote?${queryString}`)
+    const queryString = buildQueryString(params)
+    return await apiCall(`/vote${queryString ? `?${queryString}` : ''}`)
   },
   
   async createVote(voteData) {
@@ -623,8 +631,8 @@ const api = {
 
   // Tags
   async getTags(params = {}) {
-    const queryString = new URLSearchParams(params).toString()
-    return await apiCall(`/tag?${queryString}`)
+    const queryString = buildQueryString(params)
+    return await apiCall(`/tag${queryString ? `?${queryString}` : ''}`)
   },
   
   async getTag(id) {
@@ -771,7 +779,7 @@ const api = {
     if (!token) {
       throw new Error('No authentication token found');
     }
-    const queryString = new URLSearchParams(params).toString();
+    const queryString = buildQueryString(params);
     return apiCall(`/saved-posts${queryString ? `?${queryString}` : ''}`, {
       headers: { 
         'Authorization': `Bearer ${token}`
@@ -810,16 +818,16 @@ const api = {
 console.log("API module loaded and ready");
 
 // Test API connection on load
-isApiAvailable().then(available => {
-  if (available) {
-    console.log("✅ API is available and connected");
-  } else {
-    console.warn("⚠️ API is not available, will use fallback data");
-    // You might want to implement fallback behavior here
-  }
-}).catch(error => {
-  console.error("❌ Error checking API availability:", error);
-});
+// isApiAvailable().then(available => {
+//   if (available) {
+//     console.log("✅ API is available and connected");
+//   } else {
+//     console.warn("⚠️ API is not available, will use fallback data");
+//     // You might want to implement fallback behavior here
+//   }
+// }).catch(error => {
+//   console.error("❌ Error checking API availability:", error);
+// });
 
 // Expose API to global scope
 window.api = api 

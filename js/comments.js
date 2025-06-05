@@ -6,11 +6,11 @@
 // (none specific to this file yet)
 
 // API URL
-const API_URL = "https://forum-service-csdl.onrender.com"
+const API_URL_comment = "https://forum-service-csdl.onrender.com/comment"
 
 // Get token and current user
-const token = localStorage.getItem("token")
-const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}")
+const token_comment = localStorage.getItem("token")
+const currentUser_comment = JSON.parse(localStorage.getItem("currentUser") || "{}")
 
 // Show login modal
 function showLoginModal() {
@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Add a comment
 async function addComment(postId, content) {
-  if (!token) {
+  if (!token_comment) {
     showLoginModal()
     return
   }
@@ -47,11 +47,11 @@ async function addComment(postId, content) {
   }
 
   try {
-    const response = await fetch(`${API_URL}/posts/${postId}/comments`, {
+    const response = await fetch(`${API_URL_comment}/posts/${postId}/comments`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${token_comment}`,
       },
       body: JSON.stringify({ content }),
     })
@@ -71,7 +71,7 @@ async function addComment(postId, content) {
 
 // Add a reply
 async function addReply(commentId, content) {
-  if (!token) {
+  if (!token_comment) {
     showLoginModal()
     return
   }
@@ -82,11 +82,11 @@ async function addReply(commentId, content) {
   }
 
   try {
-    const response = await fetch(`${API_URL}/comments/${commentId}/replies`, {
+    const response = await fetch(`${API_URL_comment}/comments/${commentId}/replies`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${token_comment}`,
       },
       body: JSON.stringify({ content }),
     })
@@ -106,16 +106,16 @@ async function addReply(commentId, content) {
 
 // Delete a comment
 async function deleteComment(commentId) {
-  if (!token) {
+  if (!token_comment) {
     showLoginModal()
     return
   }
 
   try {
-    const response = await fetch(`${API_URL}/comments/${commentId}`, {
+    const response = await fetch(`${API_URL_comment}/comments/${commentId}`, {
       method: "DELETE",
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${token_comment}`,
       },
     })
 
@@ -134,7 +134,7 @@ async function deleteComment(commentId) {
 
 // Edit a comment
 async function editComment(commentId, content) {
-  if (!token) {
+  if (!token_comment) {
     showLoginModal()
     return
   }
@@ -145,11 +145,11 @@ async function editComment(commentId, content) {
   }
 
   try {
-    const response = await fetch(`${API_URL}/comments/${commentId}`, {
+    const response = await fetch(`${API_URL_comment}/comments/${commentId}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${token_comment}`,
       },
       body: JSON.stringify({ content }),
     })

@@ -1,9 +1,9 @@
 // API URL
-const API_URL = "https://forum-service-csdl.onrender.com"
+const API_URL_vote = "https://forum-service-csdl.onrender.com/vote"
 
 // Get token and current user
-const token = localStorage.getItem("token")
-const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}")
+const token_vote = localStorage.getItem("token")
+const currentUser_vote = JSON.parse(localStorage.getItem("currentUser") || "{}")
 
 // Show login modal
 function showLoginModal() {
@@ -19,17 +19,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Vote on a post
 async function votePost(postId, voteType) {
-  if (!token) {
+  if (!token_vote) {
     showLoginModal()
     return
   }
 
   try {
-    const response = await fetch(`${API_URL}/posts/${postId}/vote`, {
+    const response = await fetch(`${API_URL_vote}/posts/${postId}/vote`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${token_vote}`,
       },
       body: JSON.stringify({ voteType }),
     })
@@ -49,17 +49,17 @@ async function votePost(postId, voteType) {
 
 // Vote on a comment
 async function voteComment(commentId, voteType) {
-  if (!token) {
+  if (!token_vote) {
     showLoginModal()
     return
   }
 
   try {
-    const response = await fetch(`${API_URL}/comments/${commentId}/vote`, {
+    const response = await fetch(`${API_URL_vote}/comments/${commentId}/vote`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${token_vote}`,
       },
       body: JSON.stringify({ voteType }),
     })

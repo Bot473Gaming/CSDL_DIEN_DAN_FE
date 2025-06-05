@@ -6,8 +6,8 @@ const markAllReadBtn = document.getElementById("mark-all-read")
 const closeNotificationsBtn = document.querySelector(".close-notifications")
 
 // Get token from localStorage
-const token = localStorage.getItem("token")
-const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}")
+const token_notification = localStorage.getItem("token")
+const currentUser_notification = JSON.parse(localStorage.getItem("currentUser") || "{}")
 
 // Initialize notifications
 document.addEventListener("DOMContentLoaded", () => {
@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupNotificationPanel()
 
   // Load notifications
-  if (token) {
+  if (token_notification) {
     loadNotifications()
   }
 })
@@ -69,14 +69,14 @@ function closeNotificationPanel() {
 
 // Load notifications
 async function loadNotifications() {
-  if (!token || !notificationList) return
+  if (!token_notification || !notificationList) return
 
   try {
     // Show loading state
     notificationList.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>'
 
     // Fetch notifications from API
-    const data = await api.getNotifications({}, token)
+    const data = await api.getNotifications({}, token_notification)
     const notifications = data.notifications || data || []
 
     if (notifications.length === 0) {
@@ -162,10 +162,10 @@ function setupNotificationActions() {
 
 // Mark a notification as read
 async function markAsRead(notificationId, notificationItem) {
-  if (!token) return
+  if (!token_notification) return
 
   try {
-    await api.markNotificationAsRead(notificationId, token)
+    await api.markNotificationAsRead(notificationId, token_notification)
     
     // Update UI
     notificationItem.classList.remove('unread')
@@ -181,10 +181,10 @@ async function markAsRead(notificationId, notificationItem) {
 
 // Delete a notification
 async function deleteNotification(notificationId, notificationItem) {
-  if (!token) return
+  if (!token_notification) return
 
   try {
-    await api.deleteNotification(notificationId, token)
+    await api.deleteNotification(notificationId, token_notification)
     
     // Remove from UI with animation
     notificationItem.classList.add('removing')
@@ -206,10 +206,10 @@ async function deleteNotification(notificationId, notificationItem) {
 
 // Mark all notifications as read
 async function markAllAsRead() {
-  if (!token) return
+  if (!token_notification) return
 
   try {
-    await api.markAllNotificationsAsRead(token)
+    await api.markAllNotificationsAsRead(token_notification)
     
     // Update UI
     const unreadItems = notificationList.querySelectorAll('.notification-item.unread')
@@ -228,17 +228,17 @@ async function markAllAsRead() {
 
 // Update notification count
 async function updateNotificationCount() {
-  if (!token || !notificationCount) return
+  if (!token_notification || !notificationCount) return
 
   try {
     // Try to get unread count directly if the endpoint is available
     let unreadCount = 0
     try {
-      const result = await api.getUnreadNotificationCount(token)
+      const result = await api.getUnreadNotificationCount(token_notification)
       unreadCount = result.count || 0
     } catch (e) {
       // If unread count endpoint fails, fallback to counting from notifications
-      const result = await api.getNotifications({ isRead: false }, token)
+      const result = await api.getNotifications({ isRead: false }, token_notification)
       const notifications = result.notifications || result || []
       unreadCount = notifications.length
     }
