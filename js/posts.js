@@ -10,7 +10,7 @@ const relatedPosts = document.getElementById("related-posts")
 const createPostForm = document.getElementById("create-post-form")
 
 // API URL
-const API_URL = "https://2fe1-14-232-152-36.ngrok-free.app"
+const API_URL = "https://forum-service-csdl.onrender.com"
 
 // Get token and current user
 const token = localStorage.getItem("token")

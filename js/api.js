@@ -1,5 +1,5 @@
 // API configuration
-const API_URL = "https://2fe1-14-232-152-36.ngrok-free.app" // Update to your ngrok URL
+const API_URL = "https://forum-service-csdl.onrender.com" // Update to your ngrok URL
 const MAX_RETRIES = 3
 const RETRY_DELAY = 3000 // 3 seconds
 

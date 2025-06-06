@@ -1,5 +1,5 @@
 // API URL
-const API_URL = "http://localhost:3004"
+const API_URL = "https://forum-service-csdl.onrender.com"
 
 // Get token and current user
 const token = localStorage.getItem("token")
