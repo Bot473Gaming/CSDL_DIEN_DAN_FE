@@ -266,6 +266,11 @@ async function loadTopUsers() {
   }
 }
 
+function cleanParams(params) {
+  return Object.fromEntries(
+    Object.entries(params).filter(([_, v]) => v !== null && v !== undefined && v !== '')
+  );
+}
 // Load posts
 async function loadPosts() {
   try {
@@ -287,7 +292,7 @@ async function loadPosts() {
     if (postsContainer) postsContainer.innerHTML = ""
 
     // Fetch posts
-    const response = await api.getPosts({
+    const params = cleanParams({
       categoryId,
       tagIds,
       userId,
@@ -295,7 +300,9 @@ async function loadPosts() {
       sort,
       skip,
       take: limit
-    })
+    });
+
+    const response = await api.getPosts(params);
 
     // Extract posts and total from response data
     const posts = response.data.posts
