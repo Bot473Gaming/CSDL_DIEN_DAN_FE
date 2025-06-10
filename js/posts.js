@@ -8,6 +8,8 @@ const commentFormContainer = document.getElementById("comment-form-container")
 const commentCount = document.getElementById("comment-count")
 const relatedPosts = document.getElementById("related-posts")
 const createPostForm = document.getElementById("create-post-form")
+const postCategory = document.getElementById("post-category")
+
 
 import { API_URL, token, currentUser } from './config.js';
 
@@ -723,20 +725,20 @@ async function setupCreatePostForm() {
     const categories = await api.getCategories()
 
     // Add category select
-    const categorySelect = document.createElement("select")
-    categorySelect.name = "category"
-    categorySelect.required = true
-    categorySelect.innerHTML = `
-      <option value="">Chọn danh mục</option>
+    // const categorySelect = document.createElement("select")
+    // categorySelect.name = "category"
+    // categorySelect.required = true
+    postCategory.innerHTML = `
+      // <option value="">Chọn danh mục</option>
       ${categories
-        .map(
+        .data.categories.map(
           (category) => `
         <option value="${category._id}">${category.name}</option>
       `,
         )
         .join("")}
     `
-    createPostForm.insertBefore(categorySelect, createPostForm.firstChild)
+    // createPostForm.insertBefore(postCategory, createPostForm.firstChild)
 
     // Setup form submission
     createPostForm.addEventListener("submit", async (e) => {
@@ -751,7 +753,7 @@ async function setupCreatePostForm() {
       const postData = {
         title: formData.get("title"),
         content: formData.get("content"),
-        category: formData.get("category"),
+        categoryId: formData.get("category"),
         tags: formData.get("tags").split(",").map((tag) => tag.trim()),
       }
 
