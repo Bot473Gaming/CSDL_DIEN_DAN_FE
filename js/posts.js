@@ -724,10 +724,6 @@ async function setupCreatePostForm() {
     // Load categories
     const categories = await api.getCategories()
 
-    // Add category select
-    // const categorySelect = document.createElement("select")
-    // categorySelect.name = "category"
-    // categorySelect.required = true
     postCategory.innerHTML = `
       // <option value="">Chọn danh mục</option>
       ${categories
@@ -738,8 +734,7 @@ async function setupCreatePostForm() {
         )
         .join("")}
     `
-    // createPostForm.insertBefore(postCategory, createPostForm.firstChild)
-
+    
     // Setup form submission
     createPostForm.addEventListener("submit", async (e) => {
       e.preventDefault()
