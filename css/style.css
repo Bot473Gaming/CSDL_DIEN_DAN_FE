@@ -61,7 +61,7 @@ textarea {
   font-family: inherit;
   font-size: inherit;
 }
-
+post-card
 .container {
   width: 100%;
   max-width: 1200px;
@@ -466,6 +466,7 @@ textarea {
 }
 
 .post-card {
+  position: relative;
   background-color: var(--bg-color);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -529,7 +530,7 @@ textarea {
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  /* -webkit-line-clamp: 3; */
   -webkit-box-orient: vertical;
 }
 

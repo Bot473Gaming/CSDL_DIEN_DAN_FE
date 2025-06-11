@@ -63,7 +63,9 @@ async function loadPostDetail() {
 
   try {
     console.log(`Loading post detail for ID: ${postId}`)
-    const post = await api.getPost(postId)
+    // const post = await api.getPost(postId)
+    const response = await api.getPost(postId)
+    const post = response.data
     
     // Hide loading spinner
     if (postLoading) postLoading.style.display = "none"
@@ -192,6 +194,7 @@ async function loadComments(postId) {
             const content = document.getElementById("comment-content").value.trim()
             if (content) {
               await submitComment(postId, content)
+              location.reload()
             }
           })
         }
@@ -734,7 +737,7 @@ async function setupCreatePostForm() {
         )
         .join("")}
     `
-    
+
     // Setup form submission
     createPostForm.addEventListener("submit", async (e) => {
       e.preventDefault()
