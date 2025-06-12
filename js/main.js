@@ -344,7 +344,7 @@ async function loadPosts() {
                   <h2 class="post-title">
                     <a href="post.html?id=${post._id}">${post.title}</a>
                   </h2>
-                  <p class="post-excerpt">${post.content.substring(0, 200)}...</p>
+                  <p class="post-excerpt">${post.content}</p>
                 </div>
                 <div class="post-footer">
                   <div class="post-meta">
