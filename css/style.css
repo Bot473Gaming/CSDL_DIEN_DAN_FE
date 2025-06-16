@@ -149,6 +149,7 @@ post-card
   align-items: center;
   justify-content: space-between;
   height: 100%;
+  margin:0 60px;
 }
 
 .logo h1 {
@@ -958,9 +959,10 @@ post-card
 .post-container .post-meta {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 20px;
+  padding: 10px 0;
   color: var(--text-light);
   font-size: 14px;
+  border-top: 1px solid var(--border-color);
 }
 
 .post-container .post-content-text {
@@ -1011,9 +1013,8 @@ post-card
 .post-container .post-actions {
   display: flex;
   justify-content: space-between;
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border-color);
+  /* margin-top: 30px; */
+  padding-top: 10px;
 }
 
 .post-container .vote-buttons {

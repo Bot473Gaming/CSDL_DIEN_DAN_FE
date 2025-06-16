@@ -86,6 +86,10 @@ async function loadPostDetail() {
           </div>
         </div>
         <h1 class="post-title">${post.title}</h1>
+        <div class="post-content-text">${post.content}</div>
+        <div class="post-tags">
+          ${(post.tags || []).map((tag) => `<a href="index.html?tag=${tag._id}" class="tag">${tag.name}</a>`).join("")}
+        </div>
         <div class="post-meta">
           <div>
             <i class="fas fa-eye"></i> ${post.viewCount || 0} lượt xem
@@ -94,10 +98,6 @@ async function loadPostDetail() {
           <div>
             <i class="fas fa-clock"></i> Cập nhật: ${formatDate(post.updatedAt)}
           </div>
-        </div>
-        <div class="post-content-text">${post.content}</div>
-        <div class="post-tags">
-          ${(post.tags || []).map((tag) => `<a href="index.html?tag=${tag._id}" class="tag">${tag.name}</a>`).join("")}
         </div>
         <div class="post-actions">
           <div class="vote-buttons">
@@ -194,7 +194,6 @@ async function loadComments(postId) {
             const content = document.getElementById("comment-content").value.trim()
             if (content) {
               await submitComment(postId, content)
-              location.reload()
             }
           })
         }
@@ -298,10 +297,17 @@ async function submitComment(postId, content, parentCommentId = null) {
       commentData.parentCommentId = parentCommentId
     }
     
-    const newComment = await api.createComment(commentData, token)
+    const response = await api.createComment(commentData, token)
+    const newComment = response.data 
+
+    // Tạo phần tử HTML từ bình luận mới
+    const wrapper = document.createElement("div")
+    wrapper.innerHTML = renderComment(newComment)
+    const newCommentElement = wrapper.firstElementChild 
 
     // Reload comments to show the new comment
-    loadComments(postId)
+    
+    // loadComments(postId)
     
     // Clear the comment form
     const commentContent = document.getElementById("comment-content")
@@ -310,13 +316,31 @@ async function submitComment(postId, content, parentCommentId = null) {
     }
     
     // Hide reply form if this was a reply
+
     if (parentCommentId) {
-      const replyForm = document.getElementById(`reply-form-${parentCommentId}`)
-      if (replyForm) {
-        replyForm.style.display = "none"
-        replyForm.innerHTML = ""
+      let repliesContainer = document.getElementById(`replies-${parentCommentId}`)
+      if (!repliesContainer) {
+        const parentComment = document.querySelector(`.comment-item[data-id="${parentCommentId}"]`)
+        repliesContainer = document.createElement("div")
+        repliesContainer.id = `replies-${parentCommentId}`
+        repliesContainer.className = "replies-container"
+        parentComment.appendChild(repliesContainer)
       }
+
+      // Chèn lên đầu
+      repliesContainer.prepend(newCommentElement)
+    } else {
+      // Chèn bình luận gốc lên đầu danh sách
+      const commentsList = document.getElementById("comments-list")
+      if (commentsList) commentsList.prepend(newCommentElement)
     }
+
+
+    // Tăng số bình luận
+    if (commentCount) {
+      commentCount.textContent = Number(commentCount.textContent || 0) + 1
+    }
+    setupCommentActions(postId)
   } catch (error) {
     console.error("Error submitting comment:", error)
     const commentError = document.getElementById("comment-error")
@@ -338,7 +362,13 @@ async function loadRelatedPosts(categoryId, tagIds) {
       skip: 0, 
       take: 3 
     })
-    const posts = (result.posts || result || []).filter(post => post._id !== urlParams.get("id")).slice(0, 3)
+    const rawPosts = Array.isArray(result?.posts)
+      ? result.posts
+      : Array.isArray(result)
+        ? result
+        : []
+
+    const posts = rawPosts.filter(post => post._id !== urlParams.get("id")).slice(0, 3)
 
     if (posts.length === 0) {
       relatedPosts.innerHTML = `

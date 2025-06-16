@@ -340,12 +340,14 @@ async function loadPosts() {
                     <a href="index.html?category=${post.category?._id}">${post.category?.name}</a>
                   </div>
                 </div>
+                <a href="post.html?id=${post._id}">
                 <div class="post-content">
                   <h2 class="post-title">
-                    <a href="post.html?id=${post._id}">${post.title}</a>
+                    ${post.title}
                   </h2>
                   <p class="post-excerpt">${post.content}</p>
                 </div>
+                </a>
                 <div class="post-footer">
                   <div class="post-meta">
                     <span><i class="fas fa-eye"></i> ${post.viewCount || 0}</span>
