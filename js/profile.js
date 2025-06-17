@@ -55,6 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Load profile data
   loadProfileData(userId, isCurrentUser)
+  console.log("Profile.js: DOM fully loaded")
 
   // Setup tabs
   setupProfileTabs()
@@ -74,8 +75,8 @@ async function loadProfileData(userId, isCurrentUser) {
       throw new Error("Failed to fetch user profile")
     }
 
-    const user = await response.json()
-
+    const { data: user} = await response.json()
+    console.log("USER PROFILE", user)
     // Update profile data
     if (profileName) profileName.textContent = user.fullname
     if (profileRole)
@@ -92,8 +93,7 @@ async function loadProfileData(userId, isCurrentUser) {
       }
     }
 
-    if (postsCount) postsCount.textContent = user.postsCount || 0
-    if (commentsCount) commentsCount.textContent = user.commentsCount || 0
+    
     if (reputationPoints) reputationPoints.textContent = user.reputation || 0
 
     if (profileBadges) {
@@ -330,14 +330,17 @@ async function loadUserPosts(userId) {
   const userPostsLoading = document.getElementById("user-posts-loading")
 
   try {
-    const response = await fetch(`${API_URL}/users/${userId}/posts`)
+    const response = await fetch(`${API_URL}/post?userId=${userId}`)
 
     if (!response.ok) {
       throw new Error("Failed to fetch user posts")
     }
 
-    const posts = await response.json()
+    const { data } = await response.json()
+    const posts = data.posts
 
+    if (postsCount) postsCount.textContent = posts.length || 0
+    
     if (userPostsLoading) {
       userPostsLoading.style.display = "none"
     }
@@ -392,13 +395,16 @@ async function loadUserComments(userId) {
   const userCommentsLoading = document.getElementById("user-comments-loading")
 
   try {
-    const response = await fetch(`${API_URL}/users/${userId}/comments`)
+    const response = await fetch(`${API_URL}/comment?userId=${userId}`)
 
     if (!response.ok) {
       throw new Error("Failed to fetch user comments")
     }
 
-    const comments = await response.json()
+    const {data} = await response.json()
+    const comments = data.comments
+
+    if (commentsCount) commentsCount.textContent = comments.length || 0
 
     if (userCommentsLoading) {
       userCommentsLoading.style.display = "none"
