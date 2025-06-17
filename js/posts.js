@@ -73,7 +73,7 @@ async function loadPostDetail() {
     // Render post
     if (postContent) {
       postContent.innerHTML = `
-        <div onclick="window.history.back()" class="post-back"><i class="fa-solid fa-xmark"></i></div>
+        <div onclick="window.history.back()" class="post-back">← Quay lại</i></div>
         <div class="post-header">
           <div class="post-author">
             <img src="${post.user?.avatar || "assets/images/default-avatar.png"}" alt="${post.user?.fullname}">

@@ -1073,21 +1073,13 @@ post-card
   color: var(--primary-color);
 }
 .post-container .post-back {
-  position: absolute;
-  top:-8px;
-  right: -8px;
+  font-weight: bold;
   cursor: pointer;
-  background-color: #e7e5e5;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width:30px;
-  height:30px;
-  border-radius: 50px;
+  margin-bottom: 1rem;
+  color: #333;
 }
 .post-container .post-back:hover {
-  background-color: #dc3545;
-  color:#fff;
+  opacity: 0.8;;
 }
 
 /* Comments Section */
