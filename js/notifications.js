@@ -6,8 +6,8 @@ const markAllReadBtn = document.getElementById("mark-all-read")
 const closeNotificationsBtn = document.querySelector(".close-notifications")
 
 // Get token from localStorage
-const token = localStorage.getItem("token")
-const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}")
+import { API_URL, token, currentUser } from './config.js';
+
 
 // Initialize notifications
 document.addEventListener("DOMContentLoaded", () => {

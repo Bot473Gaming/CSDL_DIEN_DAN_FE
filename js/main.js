@@ -266,6 +266,11 @@ async function loadTopUsers() {
   }
 }
 
+function cleanParams(params) {
+  return Object.fromEntries(
+    Object.entries(params).filter(([_, v]) => v !== null && v !== undefined && v !== '')
+  );
+}
 // Load posts
 async function loadPosts() {
   try {
@@ -287,7 +292,7 @@ async function loadPosts() {
     if (postsContainer) postsContainer.innerHTML = ""
 
     // Fetch posts
-    const response = await api.getPosts({
+    const params = cleanParams({
       categoryId,
       tagIds,
       userId,
@@ -295,7 +300,9 @@ async function loadPosts() {
       sort,
       skip,
       take: limit
-    })
+    });
+
+    const response = await api.getPosts(params);
 
     // Extract posts and total from response data
     const posts = response.data.posts
@@ -333,12 +340,14 @@ async function loadPosts() {
                     <a href="index.html?category=${post.category?._id}">${post.category?.name}</a>
                   </div>
                 </div>
+                <a href="post.html?id=${post._id}">
                 <div class="post-content">
                   <h2 class="post-title">
-                    <a href="post.html?id=${post._id}">${post.title}</a>
+                    ${post.title}
                   </h2>
-                  <p class="post-excerpt">${post.content.substring(0, 200)}...</p>
+                  <p class="post-excerpt">${post.content}</p>
                 </div>
+                </a>
                 <div class="post-footer">
                   <div class="post-meta">
                     <span><i class="fas fa-eye"></i> ${post.viewCount || 0}</span>

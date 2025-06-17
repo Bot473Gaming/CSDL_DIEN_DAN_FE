@@ -8,13 +8,11 @@ const commentFormContainer = document.getElementById("comment-form-container")
 const commentCount = document.getElementById("comment-count")
 const relatedPosts = document.getElementById("related-posts")
 const createPostForm = document.getElementById("create-post-form")
+const postCategory = document.getElementById("post-category")
 
-// API URL
-const API_URL = "https://forum-service-csdl.onrender.com"
 
-// Get token and current user
-const token = localStorage.getItem("token")
-const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}")
+import { API_URL, token, currentUser } from './config.js';
+
 
 // Format date function
 function formatDate(dateString) {
@@ -65,7 +63,9 @@ async function loadPostDetail() {
 
   try {
     console.log(`Loading post detail for ID: ${postId}`)
-    const post = await api.getPost(postId)
+    // const post = await api.getPost(postId)
+    const response = await api.getPost(postId)
+    const post = response.data
     
     // Hide loading spinner
     if (postLoading) postLoading.style.display = "none"
@@ -73,6 +73,7 @@ async function loadPostDetail() {
     // Render post
     if (postContent) {
       postContent.innerHTML = `
+        <div onclick="window.history.back()" class="post-back">← Quay lại</i></div>
         <div class="post-header">
           <div class="post-author">
             <img src="${post.user?.avatar || "assets/images/default-avatar.png"}" alt="${post.user?.fullname}">
@@ -86,6 +87,10 @@ async function loadPostDetail() {
           </div>
         </div>
         <h1 class="post-title">${post.title}</h1>
+        <div class="post-content-text">${post.content}</div>
+        <div class="post-tags">
+          ${(post.tags || []).map((tag) => `<a href="index.html?tag=${tag._id}" class="tag">${tag.name}</a>`).join("")}
+        </div>
         <div class="post-meta">
           <div>
             <i class="fas fa-eye"></i> ${post.viewCount || 0} lượt xem
@@ -94,10 +99,6 @@ async function loadPostDetail() {
           <div>
             <i class="fas fa-clock"></i> Cập nhật: ${formatDate(post.updatedAt)}
           </div>
-        </div>
-        <div class="post-content-text">${post.content}</div>
-        <div class="post-tags">
-          ${(post.tags || []).map((tag) => `<a href="index.html?tag=${tag._id}" class="tag">${tag.name}</a>`).join("")}
         </div>
         <div class="post-actions">
           <div class="vote-buttons">
@@ -297,11 +298,23 @@ async function submitComment(postId, content, parentCommentId = null) {
       commentData.parentCommentId = parentCommentId
     }
     
-    const newComment = await api.createComment(commentData, token)
+    const response = await api.createComment(commentData)
+    const newComment = response.data 
+
+    if (!newComment.user) {
+      newComment.user = {
+        fullname: currentUser.fullname,
+        avatar: currentUser.avatar
+      }
+    }
+
+    // Tạo phần tử HTML từ bình luận mới
+    const wrapper = document.createElement("div")
+    wrapper.innerHTML = renderComment(newComment)
+    const newCommentElement = wrapper.firstElementChild 
 
     // Reload comments to show the new comment
-    loadComments(postId)
-    
+        
     // Clear the comment form
     const commentContent = document.getElementById("comment-content")
     if (commentContent) {
@@ -309,13 +322,31 @@ async function submitComment(postId, content, parentCommentId = null) {
     }
     
     // Hide reply form if this was a reply
+
     if (parentCommentId) {
-      const replyForm = document.getElementById(`reply-form-${parentCommentId}`)
-      if (replyForm) {
-        replyForm.style.display = "none"
-        replyForm.innerHTML = ""
+      let repliesContainer = document.getElementById(`replies-${parentCommentId}`)
+      if (!repliesContainer) {
+        const parentComment = document.querySelector(`.comment-item[data-id="${parentCommentId}"]`)
+        repliesContainer = document.createElement("div")
+        repliesContainer.id = `replies-${parentCommentId}`
+        repliesContainer.className = "replies-container"
+        parentComment.appendChild(repliesContainer)
       }
+
+      // Chèn lên đầu
+      repliesContainer.prepend(newCommentElement)
+    } else {
+      // Chèn bình luận gốc lên đầu danh sách
+      const commentsList = document.getElementById("comments-list")
+      if (commentsList) commentsList.prepend(newCommentElement)
     }
+
+
+    // Tăng số bình luận
+    if (commentCount) {
+      commentCount.textContent = Number(commentCount.textContent || 0) + 1
+    }
+    setupCommentActions(postId)
   } catch (error) {
     console.error("Error submitting comment:", error)
     const commentError = document.getElementById("comment-error")
@@ -337,7 +368,13 @@ async function loadRelatedPosts(categoryId, tagIds) {
       skip: 0, 
       take: 3 
     })
-    const posts = (result.posts || result || []).filter(post => post._id !== urlParams.get("id")).slice(0, 3)
+    const rawPosts = Array.isArray(result?.posts)
+      ? result.posts
+      : Array.isArray(result)
+        ? result
+        : []
+
+    const posts = rawPosts.filter(post => post._id !== urlParams.get("id")).slice(0, 3)
 
     if (posts.length === 0) {
       relatedPosts.innerHTML = `
@@ -726,21 +763,16 @@ async function setupCreatePostForm() {
     // Load categories
     const categories = await api.getCategories()
 
-    // Add category select
-    const categorySelect = document.createElement("select")
-    categorySelect.name = "category"
-    categorySelect.required = true
-    categorySelect.innerHTML = `
-      <option value="">Chọn danh mục</option>
+    postCategory.innerHTML = `
+      // <option value="">Chọn danh mục</option>
       ${categories
-        .map(
+        .data.categories.map(
           (category) => `
         <option value="${category._id}">${category.name}</option>
       `,
         )
         .join("")}
     `
-    createPostForm.insertBefore(categorySelect, createPostForm.firstChild)
 
     // Setup form submission
     createPostForm.addEventListener("submit", async (e) => {
@@ -755,7 +787,7 @@ async function setupCreatePostForm() {
       const postData = {
         title: formData.get("title"),
         content: formData.get("content"),
-        category: formData.get("category"),
+        categoryId: formData.get("category"),
         tags: formData.get("tags").split(",").map((tag) => tag.trim()),
       }
 

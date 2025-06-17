@@ -5,12 +5,8 @@
 // DOM Elements
 // (none specific to this file yet)
 
-// API URL
-const API_URL = "https://forum-service-csdl.onrender.com"
+import { API_URL, token, currentUser } from './config.js';
 
-// Get token and current user
-const token = localStorage.getItem("token")
-const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}")
 
 // Show login modal
 function showLoginModal() {

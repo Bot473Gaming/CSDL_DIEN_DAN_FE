@@ -61,7 +61,7 @@ textarea {
   font-family: inherit;
   font-size: inherit;
 }
-
+post-card
 .container {
   width: 100%;
   max-width: 1200px;
@@ -149,6 +149,7 @@ textarea {
   align-items: center;
   justify-content: space-between;
   height: 100%;
+  margin:0 60px;
 }
 
 .logo h1 {
@@ -342,13 +343,13 @@ textarea {
 }
 
 .content-grid {
-  display: grid;
-  grid-template-columns: 1fr 3fr;
-  gap: 30px;
+  display: flex;
+  justify-content: space-evenly;
 }
 
 /* Sidebar */
 .sidebar {
+  width: 25%;
   position: sticky;
   top: calc(var(--header-height) + 30px);
   height: fit-content;
@@ -442,7 +443,7 @@ textarea {
 
 /* Posts Area */
 .posts-area {
-  width: 100%;
+  width: 70%;
 }
 
 .posts-header {
@@ -466,6 +467,7 @@ textarea {
 }
 
 .post-card {
+  position: relative;
   background-color: var(--bg-color);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -529,9 +531,10 @@ textarea {
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  /* -webkit-line-clamp: 3; */
   -webkit-box-orient: vertical;
 }
+
 
 .post-tags {
   display: flex;
@@ -940,8 +943,12 @@ textarea {
   box-shadow: var(--shadow);
   padding: 30px;
   margin-bottom: 30px;
+  position: relative;
+  overflow: visible;
 }
-
+.post-container{
+  width:70%;
+}
 .post-container .post-header {
   margin-bottom: 20px;
 }
@@ -954,9 +961,10 @@ textarea {
 .post-container .post-meta {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 20px;
+  padding: 10px 0;
   color: var(--text-light);
   font-size: 14px;
+  border-top: 1px solid var(--border-color);
 }
 
 .post-container .post-content-text {
@@ -1007,9 +1015,7 @@ textarea {
 .post-container .post-actions {
   display: flex;
   justify-content: space-between;
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border-color);
+  padding-top: 10px;
 }
 
 .post-container .vote-buttons {
@@ -1065,6 +1071,15 @@ textarea {
 
 .post-container .post-btn:hover {
   color: var(--primary-color);
+}
+.post-container .post-back {
+  font-weight: bold;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  color: #333;
+}
+.post-container .post-back:hover {
+  opacity: 0.8;;
 }
 
 /* Comments Section */

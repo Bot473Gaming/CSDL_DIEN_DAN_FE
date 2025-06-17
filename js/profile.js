@@ -14,12 +14,8 @@ const userComments = document.getElementById("user-comments")
 const userAbout = document.getElementById("user-about")
 const profileSettingsForm = document.getElementById("profile-settings-form")
 
-// API URL
-const API_URL = "https://forum-service-csdl.onrender.com"
+import { API_URL, token, currentUser } from './config.js';
 
-// Get token and current user
-const token = localStorage.getItem("token")
-const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}")
 
 // Format date function
 function formatDate(dateString) {
