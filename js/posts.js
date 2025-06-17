@@ -73,6 +73,7 @@ async function loadPostDetail() {
     // Render post
     if (postContent) {
       postContent.innerHTML = `
+        <div onclick="window.history.back()" class="post-back"><i class="fa-solid fa-arrow-left"></i></div>
         <div class="post-header">
           <div class="post-author">
             <img src="${post.user?.avatar || "assets/images/default-avatar.png"}" alt="${post.user?.fullname}">
@@ -297,8 +298,15 @@ async function submitComment(postId, content, parentCommentId = null) {
       commentData.parentCommentId = parentCommentId
     }
     
-    const response = await api.createComment(commentData, token)
+    const response = await api.createComment(commentData)
     const newComment = response.data 
+
+    if (!newComment.user) {
+      newComment.user = {
+        fullname: currentUser.fullname,
+        avatar: currentUser.avatar
+      }
+    }
 
     // Tạo phần tử HTML từ bình luận mới
     const wrapper = document.createElement("div")
@@ -306,9 +314,7 @@ async function submitComment(postId, content, parentCommentId = null) {
     const newCommentElement = wrapper.firstElementChild 
 
     // Reload comments to show the new comment
-    
-    // loadComments(postId)
-    
+        
     // Clear the comment form
     const commentContent = document.getElementById("comment-content")
     if (commentContent) {

@@ -943,6 +943,7 @@ post-card
   box-shadow: var(--shadow);
   padding: 30px;
   margin-bottom: 30px;
+  position: relative;
 }
 .post-container{
   width:70%;
@@ -1013,7 +1014,6 @@ post-card
 .post-container .post-actions {
   display: flex;
   justify-content: space-between;
-  /* margin-top: 30px; */
   padding-top: 10px;
 }
 
@@ -1070,6 +1070,12 @@ post-card
 
 .post-container .post-btn:hover {
   color: var(--primary-color);
+}
+.post-container .post-back {
+  position: absolute;
+  top:0;
+  left: 7px;
+  cursor: pointer;
 }
 
 /* Comments Section */
