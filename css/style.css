@@ -944,6 +944,7 @@ post-card
   padding: 30px;
   margin-bottom: 30px;
   position: relative;
+  overflow: visible;
 }
 .post-container{
   width:70%;
@@ -1073,9 +1074,20 @@ post-card
 }
 .post-container .post-back {
   position: absolute;
-  top:0;
-  left: 7px;
+  top:-8px;
+  right: -8px;
   cursor: pointer;
+  background-color: #e7e5e5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width:30px;
+  height:30px;
+  border-radius: 50px;
+}
+.post-container .post-back:hover {
+  background-color: #dc3545;
+  color:#fff;
 }
 
 /* Comments Section */
