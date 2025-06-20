@@ -199,13 +199,15 @@ async function loadComments(postId) {
     }
 
     const comments = response.data.comments || response.data || []
+    const totlaComment = response.data.total || 0
 
+    
     // Hide loading spinner
     commentsLoading.style.display = "none"
 
     // Update comment count
     if (commentCount) {
-      commentCount.textContent = comments.length
+      commentCount.textContent = totlaComment;
     }
 
     // Render comment form if user is logged in
