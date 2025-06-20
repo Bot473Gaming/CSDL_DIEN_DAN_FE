@@ -12,6 +12,7 @@ const postCategory = document.getElementById("post-category")
 
 
 import { API_URL, token, currentUser } from './config.js';
+import { votePost, voteComment } from './votes.js'; 
 
 
 // Format date function
@@ -50,6 +51,37 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 })
 
+async function TotalVotes() {
+  try {
+    const response = await api.getVotes(); // Gọi API có sẵn của bạn
+    const votes = response?.data?.votes || []; // An toàn nếu không có dữ liệu
+
+    const totals = {};
+
+    for (const vote of votes) {
+      if (vote.targetType !== 'post') continue; // ⛔ Bỏ qua vote cho comment
+
+      const postId = vote.targetId;
+      const voteValue = vote.voteValue || 0;
+
+      if (!totals[postId]) {
+        totals[postId] = 0;
+      }
+
+      totals[postId] += voteValue;
+    }
+
+    console.log("Tổng vote mỗi post:", totals);
+    return totals;
+  } catch (error) {
+    console.error("Lỗi khi tính tổng vote:", error.message);
+    return {};
+  }
+}
+
+
+
+
 // Load post detail
 async function loadPostDetail() {
   // Get post ID from URL
@@ -67,9 +99,11 @@ async function loadPostDetail() {
     const response = await api.getPost(postId)
     const post = response.data
     
+    
     // Hide loading spinner
     if (postLoading) postLoading.style.display = "none"
-
+    const totalVote=await TotalVotes()
+    const idPost=post._id
     // Render post
     if (postContent) {
       postContent.innerHTML = `
@@ -105,7 +139,7 @@ async function loadPostDetail() {
             <button class="vote-btn upvote ${post.userVote === 1 ? "upvoted" : ""}" data-id="${post._id}">
               <i class="fas fa-thumbs-up"></i>
             </button>
-            <span class="vote-count">${post.votes?.length || 0}</span>
+            <span class="vote-count">${totalVote[idPost] || 0}</span>
             <button class="vote-btn downvote ${post.userVote === -1 ? "downvoted" : ""}" data-id="${post._id}">
               <i class="fas fa-thumbs-down"></i>
             </button>
@@ -411,72 +445,87 @@ async function loadRelatedPosts(categoryId, tagIds) {
 }
 
 // Setup post detail actions
-function setupPostDetailActions(post) {
+///
+async function setupPostDetailActions(post) {
   // Vote buttons
-  const upvoteBtn = document.querySelector(".vote-btn.upvote")
-  const downvoteBtn = document.querySelector(".vote-btn.downvote")
-  const voteCount = document.querySelector(".vote-count")
+  const upvoteBtn = document.querySelector(".vote-btn.upvote");
+  const downvoteBtn = document.querySelector(".vote-btn.downvote");
+  const voteCount = document.querySelector(".vote-count");
 
+
+  // Tìm vote hiện tại của user từ mảng votes (nếu có)
+  const currentVote = Array.isArray(post.votes)
+    ? post.votes.find(v => v.userId === currentUser._id)
+    : post.votes;
+
+  post.voteId = currentVote?._id || null;
+  post.userVote = currentVote?.voteValue || 0;
+  // Cập nhật giao diện ban đầu
+  if (post.userVote === 1) upvoteBtn.classList.add("upvoted");
+  if (post.userVote === -1) downvoteBtn.classList.add("downvoted");
+  
   if (upvoteBtn && downvoteBtn && voteCount) {
     upvoteBtn.addEventListener("click", async () => {
-      if (!token) {
-        showLoginModal()
-        return
-      }
-
+      if (!token) return showLoginModal();
+      const isUndo = post.userVote;
       try {
-        const response = await fetch(`${API_URL}/posts/${post._id}/vote`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ vote: post.userVote === 1 ? 0 : 1 }),
-        })
-
-        if (!response.ok) {
-          throw new Error("Failed to vote")
+        if (isUndo === 1) {
+          // Unvote
+          voteCount.textContent = parseInt(voteCount.textContent) - 1;
+          upvoteBtn.classList.remove("upvoted");
+          post.userVote = 0;
+          await api.deleteVote(post.voteId);
+          post.voteId = null;
+        } else {
+          post.userVote = 1; // ⬅️ Cập nhật trước
+          const data = await votePost(post._id, post.userVote); // gửi đúng userVote
+          upvoteBtn.classList.add("upvoted");
+          downvoteBtn.classList.remove("downvoted");
+          post.voteId = data.data._id;
+          if(isUndo === -1){
+            voteCount.textContent = parseInt(voteCount.textContent) + 2;
+          }else{
+            voteCount.textContent = parseInt(voteCount.textContent) + 1;
+          }
+          
         }
-
-        const data = await response.json()
-        voteCount.textContent = data.voteCount
-        upvoteBtn.classList.toggle("upvoted", data.userVote === 1)
-        downvoteBtn.classList.remove("downvoted")
-      } catch (error) {
-        console.error("Error voting:", error)
-        alert("Đã xảy ra lỗi khi bình chọn. Vui lòng thử lại sau.")
+      } catch (err) {
+        console.error("Vote error:", err);
       }
-    })
+    });
 
     downvoteBtn.addEventListener("click", async () => {
-      if (!token) {
-        showLoginModal()
-        return
-      }
+      if (!token) return showLoginModal();
 
+      const isUndo = post.userVote;
+    
       try {
-        const response = await fetch(`${API_URL}/posts/${post._id}/vote`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ vote: post.userVote === -1 ? 0 : -1 }),
-        })
-
-        if (!response.ok) {
-          throw new Error("Failed to vote")
+        console.log("mmmm",post)
+        if (isUndo === -1) {
+          // Unvote
+          voteCount.textContent = parseInt(voteCount.textContent) + 1;
+          console.log("mmmm",post)
+          downvoteBtn.classList.remove("downvoted");
+          post.userVote = 0;
+          await api.deleteVote(post.voteId);
+          post.voteId = null;
+        } else {
+          post.userVote = -1; // ⬅️ Cập nhật trước
+          const data = await votePost(post._id, post.userVote); // gửi đúng userVote
+          downvoteBtn.classList.add("downvoted");
+          upvoteBtn.classList.remove("upvoted");
+          post.voteId = data.data._id;
+          if(isUndo === 1){
+            voteCount.textContent = parseInt(voteCount.textContent) - 2;
+          }else{
+            voteCount.textContent = parseInt(voteCount.textContent) - 1;
+          }
         }
-
-        const data = await response.json()
-        voteCount.textContent = data.voteCount
-        downvoteBtn.classList.toggle("downvoted", data.userVote === -1)
-        upvoteBtn.classList.remove("upvoted")
-      } catch (error) {
-        console.error("Error voting:", error)
-        alert("Đã xảy ra lỗi khi bình chọn. Vui lòng thử lại sau.")
+      } catch (err) {
+        console.error("Vote error:", err);
       }
-    })
+    });
+
   }
 
   // Save post button
@@ -552,41 +601,50 @@ function setupPostDetailActions(post) {
 // Setup comment actions
 function setupCommentActions(postId) {
   // Vote buttons
-  const voteButtons = document.querySelectorAll(".comment-vote button")
+ const voteButtons = document.querySelectorAll(".comment-item .vote-buttons .vote-btn"); // Thay đổi selector này
   voteButtons.forEach((button) => {
     button.addEventListener("click", async () => {
       if (!token) {
-        showLoginModal()
-        return
+        showLoginModal();
+        return;
       }
 
-      const commentId = button.dataset.id
-      const isUpvote = button.classList.contains("upvote")
-      const voteCount = button.parentElement.querySelector(".vote-count")
-      const upvoteBtn = button.parentElement.querySelector(".upvote")
-      const downvoteBtn = button.parentElement.querySelector(".downvote")
+      const commentId = button.dataset.id;
+      const isUpvote = button.classList.contains("upvote");
+      const commentItem = button.closest(".comment-item"); // Tìm phần tử comment cha
+      const voteCountSpan = commentItem.querySelector(".vote-count");
+      const upvoteBtn = commentItem.querySelector(".vote-btn.upvote");
+      const downvoteBtn = commentItem.querySelector(".vote-btn.downvote");
+
+      // Lấy trạng thái userVote hiện tại của bình luận
+      // Để làm được điều này, bạn cần đảm bảo rằng `comment.userVote` được render vào DOM.
+      // Một cách để làm điều này là lưu nó vào một data attribute trên comment-item hoặc trực tiếp lấy từ class.
+      // Giả sử bạn đã có thông tin `userVote` khi render comment:
+      let currentUserVote = 0;
+      if (upvoteBtn.classList.contains("upvoted")) {
+        currentUserVote = 1;
+      } else if (downvoteBtn.classList.contains("downvoted")) {
+        currentUserVote = -1;
+      }
+
+      let newVoteType;
+      if (isUpvote) {
+        newVoteType = currentUserVote === 1 ? 0 : 1; // Bỏ vote nếu đã upvoted, ngược lại upvote
+      } else { // isDownvote
+        newVoteType = currentUserVote === -1 ? 0 : -1; // Bỏ vote nếu đã downvoted, ngược lại downvote
+      }
 
       try {
-        const response = await fetch(`${API_URL}/comments/${commentId}/vote`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ vote: isUpvote ? 1 : -1 }),
-        })
-
-        if (!response.ok) {
-          throw new Error("Failed to vote")
+        // Sử dụng hàm voteComment từ votes.js
+        const data = await voteComment(commentId, newVoteType); // Truyền commentId và voteType
+        if (data) {
+          voteCountSpan.textContent = data.voteCount;
+          upvoteBtn.classList.toggle("upvoted", data.userVote === 1);
+          downvoteBtn.classList.toggle("downvoted", data.userVote === -1);
         }
-
-        const data = await response.json()
-        voteCount.textContent = data.voteCount
-        upvoteBtn.classList.toggle("upvoted", data.userVote === 1)
-        downvoteBtn.classList.toggle("downvoted", data.userVote === -1)
       } catch (error) {
-        console.error("Error voting:", error)
-        alert("Đã xảy ra lỗi khi bình chọn. Vui lòng thử lại sau.")
+        console.error("Error voting:", error);
+        alert("Đã xảy ra lỗi khi bình chọn. Vui lòng thử lại sau.");
       }
     })
   })

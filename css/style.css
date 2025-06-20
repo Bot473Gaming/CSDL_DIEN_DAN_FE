@@ -1510,3 +1510,15 @@ post-card
   height: 100%;
   object-fit: cover;
 }
+
+
+
+.vote-btn.upvoted {
+  color: green;
+  font-weight: bold;
+}
+
+.vote-btn.downvoted {
+  color: red;
+  font-weight: bold;
+}

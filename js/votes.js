@@ -14,61 +14,53 @@ document.addEventListener("DOMContentLoaded", () => {
 })
 
 // Vote on a post
-async function votePost(postId, voteType) {
+export async function votePost(postId, voteType) { // voteType ở đây vẫn giữ nguyên vì nó là tham số đầu vào
   if (!token) {
     showLoginModal()
-    return
+    return null
   }
 
   try {
-    const response = await fetch(`${API_URL}/posts/${postId}/vote`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ voteType }),
-    })
+    // Chuẩn bị dữ liệu cho backend, sử dụng targetId, targetType và voteValue
+    const voteData = {
+      targetId: postId,
+      targetType: 'post',
+      voteValue: voteType // Đã thay đổi 'voteType' thành 'voteValue' ở đây
+    };
+    
+    // Gọi hàm createVote từ api.js
+    const data = await api.createVote(voteData);
 
-    if (!response.ok) {
-      throw new Error("Failed to vote")
-    }
-
-    const data = await response.json()
-    return data
+    return data;
   } catch (error) {
     console.error("Error voting on post:", error)
-    alert("Đã xảy ra lỗi khi bình chọn. Vui lòng thử lại sau.")
+    alert(`Đã xảy ra lỗi khi bình chọn: ${error.message}. Vui lòng thử lại sau.`)
     return null
   }
 }
 
 // Vote on a comment
-async function voteComment(commentId, voteType) {
+export async function voteComment(commentId, voteType) { // voteType ở đây vẫn giữ nguyên vì nó là tham số đầu vào
   if (!token) {
     showLoginModal()
-    return
+    return null
   }
 
   try {
-    const response = await fetch(`${API_URL}/comments/${commentId}/vote`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ voteType }),
-    })
+    // Chuẩn bị dữ liệu cho backend, sử dụng targetId, targetType và voteValue
+    const voteData = {
+      targetId: commentId,
+      targetType: 'comment',
+      voteValue: voteType // Đã thay đổi 'voteType' thành 'voteValue' ở đây
+    };
+    
+    // Gọi hàm createVote từ api.js
+    const data = await api.getVote(voteData);
 
-    if (!response.ok) {
-      throw new Error("Failed to vote")
-    }
-
-    const data = await response.json()
-    return data
+    return data;
   } catch (error) {
     console.error("Error voting on comment:", error)
-    alert("Đã xảy ra lỗi khi bình chọn. Vui lòng thử lại sau.")
+    alert(`Đã xảy ra lỗi khi bình chọn: ${error.message}. Vui lòng thử lại sau.`)
     return null
   }
 }
