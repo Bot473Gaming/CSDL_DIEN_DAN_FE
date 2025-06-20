@@ -242,6 +242,7 @@ async function loadComments(postId) {
     }
 
     // Render comments
+    const totalComment=await TotalVotesForComments()
     if (comments.length === 0) {
       commentsList.innerHTML = `
         <div class="no-comments">
@@ -249,7 +250,7 @@ async function loadComments(postId) {
         </div>
       `
     } else {
-      commentsList.innerHTML = comments.map(comment => renderComment(comment)).join("")
+      commentsList.innerHTML = comments.map(comment => renderComment(comment,totalComment)).join("")
     }
 
     // Setup comment actions
@@ -265,10 +266,45 @@ async function loadComments(postId) {
   }
 }
 
+async function TotalVotesForComments() {
+  try {
+    const response = await api.getVotes(); // Gọi API lấy toàn bộ votes
+    const votes = response?.data?.votes || []; // Phòng khi không có dữ liệu
+    console.log("mmmmm",votes)
+    const totals = {}; // Lưu tổng vote cho từng commentId
+
+    for (const vote of votes) {
+      if (vote.targetType !== 'comment') continue; // ⛔ Bỏ qua vote cho post
+
+      const commentId = vote.targetId;
+      const voteValue = vote.voteValue || 0;
+
+      if (!totals[commentId]) {
+        totals[commentId] = 0;
+      }
+
+      totals[commentId] += voteValue;
+    }
+
+    console.log("Tổng vote mỗi comment:", totals);
+    return totals;
+  } catch (error) {
+    console.error("Lỗi khi tính tổng vote cho comment:", error.message);
+    return {};
+  }
+}
 // Render a single comment
-function renderComment(comment) {
+function renderComment(comment,totalComment) {
+  // console.log("mmmm",comment)
+  const vote = comment.votes?.[0] || {};
+  const userVote = vote.voteValue || 0;
+  const voteId = vote._id || '';
+  console.log("mmmm",userVote)
   return `
-    <div class="comment-item ${comment.parentId ? 'reply' : ''}" data-id="${comment._id}">
+    <div class="comment-item ${comment.parentId ? 'reply' : ''}" 
+         data-id="${comment._id}" 
+         data-user-vote="${userVote}" 
+         data-vote-id="${voteId}" >
       <div class="comment-author">
         <img src="${comment.user?.avatar || 'assets/images/default-avatar.png'}" alt="${comment.user?.fullname}">
         <div>
@@ -282,7 +318,7 @@ function renderComment(comment) {
           <button class="vote-btn upvote ${comment.userVote === 1 ? 'upvoted' : ''}" data-id="${comment._id}">
             <i class="fas fa-thumbs-up"></i>
           </button>
-          <span class="vote-count">${comment.votes?.length || 0}</span>
+          <span class="vote-count">${totalComment[comment._id] || 0}</span>
           <button class="vote-btn downvote ${comment.userVote === -1 ? 'downvoted' : ''}" data-id="${comment._id}">
             <i class="fas fa-thumbs-down"></i>
           </button>
@@ -343,10 +379,10 @@ async function submitComment(postId, content, parentCommentId = null) {
     }
 
     // Tạo phần tử HTML từ bình luận mới
+    const totalComment=await TotalVotesForComments()
     const wrapper = document.createElement("div")
-    wrapper.innerHTML = renderComment(newComment)
+    wrapper.innerHTML = renderComment(newComment,totalComment)
     const newCommentElement = wrapper.firstElementChild 
-
     // Reload comments to show the new comment
         
     // Clear the comment form
@@ -452,7 +488,7 @@ async function setupPostDetailActions(post) {
   const downvoteBtn = document.querySelector(".vote-btn.downvote");
   const voteCount = document.querySelector(".vote-count");
 
-
+  console.log(post)
   // Tìm vote hiện tại của user từ mảng votes (nếu có)
   const currentVote = Array.isArray(post.votes)
     ? post.votes.find(v => v.userId === currentUser._id)
@@ -460,6 +496,7 @@ async function setupPostDetailActions(post) {
 
   post.voteId = currentVote?._id || null;
   post.userVote = currentVote?.voteValue || 0;
+  
   // Cập nhật giao diện ban đầu
   if (post.userVote === 1) upvoteBtn.classList.add("upvoted");
   if (post.userVote === -1) downvoteBtn.classList.add("downvoted");
@@ -600,55 +637,96 @@ async function setupPostDetailActions(post) {
 
 // Setup comment actions
 function setupCommentActions(postId) {
-  // Vote buttons
- const voteButtons = document.querySelectorAll(".comment-item .vote-buttons .vote-btn"); // Thay đổi selector này
-  voteButtons.forEach((button) => {
-    button.addEventListener("click", async () => {
-      if (!token) {
-        showLoginModal();
-        return;
-      }
+  const commentItems = document.querySelectorAll(".comment-item");
 
-      const commentId = button.dataset.id;
-      const isUpvote = button.classList.contains("upvote");
-      const commentItem = button.closest(".comment-item"); // Tìm phần tử comment cha
-      const voteCountSpan = commentItem.querySelector(".vote-count");
-      const upvoteBtn = commentItem.querySelector(".vote-btn.upvote");
-      const downvoteBtn = commentItem.querySelector(".vote-btn.downvote");
+  commentItems.forEach((commentItem) => {
+    const commentId = commentItem.dataset.id;
+    const voteCountSpan = commentItem.querySelector(".vote-count");
+    const upvoteBtn = commentItem.querySelector(".vote-btn.upvote");
+    const downvoteBtn = commentItem.querySelector(".vote-btn.downvote");
 
-      // Lấy trạng thái userVote hiện tại của bình luận
-      // Để làm được điều này, bạn cần đảm bảo rằng `comment.userVote` được render vào DOM.
-      // Một cách để làm điều này là lưu nó vào một data attribute trên comment-item hoặc trực tiếp lấy từ class.
-      // Giả sử bạn đã có thông tin `userVote` khi render comment:
-      let currentUserVote = 0;
-      if (upvoteBtn.classList.contains("upvoted")) {
-        currentUserVote = 1;
-      } else if (downvoteBtn.classList.contains("downvoted")) {
-        currentUserVote = -1;
-      }
+    let voteId = commentItem.dataset.voteId || null;
+    let userVote = parseInt(commentItem.dataset.userVote);
+    // Cập nhật giao diện ban đầu
+    if (parseInt(commentItem.dataset.userVote) === 1) upvoteBtn.classList.add("upvoted");
+    if (parseInt(commentItem.dataset.userVote) === -1) downvoteBtn.classList.add("downvoted");
 
-      let newVoteType;
-      if (isUpvote) {
-        newVoteType = currentUserVote === 1 ? 0 : 1; // Bỏ vote nếu đã upvoted, ngược lại upvote
-      } else { // isDownvote
-        newVoteType = currentUserVote === -1 ? 0 : -1; // Bỏ vote nếu đã downvoted, ngược lại downvote
-      }
+    upvoteBtn.addEventListener("click", async () => {
+      if (!token) return showLoginModal();
 
       try {
-        // Sử dụng hàm voteComment từ votes.js
-        const data = await voteComment(commentId, newVoteType); // Truyền commentId và voteType
-        if (data) {
-          voteCountSpan.textContent = data.voteCount;
-          upvoteBtn.classList.toggle("upvoted", data.userVote === 1);
-          downvoteBtn.classList.toggle("downvoted", data.userVote === -1);
+        console.log("lkkkkkk",userVote)
+        if (userVote === 1) {
+          // Unvote
+          userVote = 0;
+          voteCountSpan.textContent = parseInt( voteCountSpan.textContent) - 1;
+          upvoteBtn.classList.remove("upvoted");
+          await api.deleteVote(voteId);
+          commentItem.dataset.voteId = '';
+        } else {
+          // Nếu đã downvote trước đó, +2. Nếu chưa vote, +1
+          upvoteBtn.classList.add("upvoted");
+          downvoteBtn.classList.remove("downvoted");
+          if(userVote === 0){
+            voteCountSpan.textContent = parseInt( voteCountSpan.textContent) + 1
+            userVote = 1;
+            const data = await voteComment(commentId, 1);
+          }else{
+            voteCountSpan.textContent = parseInt( voteCountSpan.textContent) + 2
+            userVote = 1;
+            const data = await voteComment(commentId, 1);
+          }
+          commentItem.dataset.voteId = data?.voteId || '';
+  
         }
-      } catch (error) {
-        console.error("Error voting:", error);
-        alert("Đã xảy ra lỗi khi bình chọn. Vui lòng thử lại sau.");
-      }
-    })
-  })
 
+        // Cập nhật dataset
+        // commentItem.dataset.voteCount = parseInt( voteCountSpan.textContent);
+        // commentItem.dataset.userVote = userVote;
+        
+      } catch (error) {
+        console.error("Error voting on comment (upvote):", error);
+      }
+    });
+
+    downvoteBtn.addEventListener("click", async () => {
+      if (!token) return showLoginModal();
+
+      try {
+        if (userVote === -1) {
+          // Unvote
+          userVote = 0;
+          voteCountSpan.textContent = parseInt( voteCountSpan.textContent) + 1
+          downvoteBtn.classList.remove("downvoted");
+          await api.deleteVote(voteId);
+          commentItem.dataset.voteId = '';
+        } else {
+          // Nếu đã upvote trước đó, -2. Nếu chưa vote, -1
+          downvoteBtn.classList.add("downvoted");
+          upvoteBtn.classList.remove("upvoted");
+          if(userVote === 0){
+            voteCountSpan.textContent = parseInt( voteCountSpan.textContent) - 1
+            userVote = -1;
+            const data = await voteComment(commentId, -1);
+          }else{
+            voteCountSpan.textContent = parseInt( voteCountSpan.textContent) - 2
+            userVote = -1;
+            const data = await voteComment(commentId, -1);
+          }
+          commentItem.dataset.voteId = data?.voteId || '';
+        }
+
+        // commentItem.dataset.voteId = voteId || '';
+        // commentItem.dataset.userVote = userVote;
+        // Cập nhật dataset
+        // commentItem.dataset.voteCount = parseInt( voteCountSpan.textContent);
+        // commentItem.dataset.userVote = userVote;
+        // commentItem.dataset.voteId = voteId || '';
+      } catch (error) {
+        console.error("Error voting on comment (downvote):", error);
+      }
+    });
+  });
   // Reply buttons
   const replyButtons = document.querySelectorAll(".reply-btn")
   replyButtons.forEach((button) => {
