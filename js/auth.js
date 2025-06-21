@@ -127,7 +127,7 @@ async function handleRegister(e) {
 
     // Call register API
     const response = await api.register({ fullname, username, email, password })
-    
+    console.log("vvvv",response)
     if (!response.success) {
       throw new Error(response.message || "Đăng ký thất bại")
     }
