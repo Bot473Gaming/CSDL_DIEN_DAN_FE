@@ -373,9 +373,12 @@ const api = {
   },
 
   async register(userData) {
-    return await apiCall('/auth/login', {
+    return await apiCall('/users', {
       method: 'POST',
-      body: JSON.stringify(userData)
+      body: JSON.stringify(userData),
+      headers: {
+        'Content-Type': 'application/json'
+      }
     })
   },
 
