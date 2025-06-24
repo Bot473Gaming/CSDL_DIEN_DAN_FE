@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
 })
 
 // Set up notification panel
-function setupNotificationPanel() {
+export function setupNotificationPanel() {
   if (!notificationPanel) return
 
   // Handle notification icon click
@@ -77,7 +77,7 @@ async function loadNotifications() {
 
     // Fetch notifications from API
     const data = await api.getNotifications({}, token)
-    const notifications = data.notifications || data || []
+    const notifications = data.data.notifications || data || []
 
     if (notifications.length === 0) {
       notificationList.innerHTML = '<div class="empty-state">Không có thông báo nào</div>'
@@ -145,6 +145,7 @@ function setupNotificationActions() {
       const notificationItem = e.target.closest('.notification-item')
       const notificationId = notificationItem.dataset.id
       await deleteNotification(notificationId, notificationItem)
+      await loadNotifications()
     })
   })
 
@@ -198,7 +199,7 @@ async function deleteNotification(notificationId, notificationItem) {
       
       // Update notification count
       updateNotificationCount()
-    }, 300)
+    }, 0)
   } catch (error) {
     console.error('Error deleting notification:', error)
   }
@@ -227,7 +228,7 @@ async function markAllAsRead() {
 }
 
 // Update notification count
-async function updateNotificationCount() {
+export async function updateNotificationCount() {
   if (!token || !notificationCount) return
 
   try {
@@ -287,3 +288,5 @@ function formatDate(date) {
   // Format as date
   return date.toLocaleDateString('vi-VN')
 }
+
+

@@ -2,6 +2,9 @@
 let token = localStorage.getItem("token")
 let currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}")
 
+import { setupNotificationPanel } from './notifications.js';
+// import { updateNotificationCount } from './notifications.js';
+
 // DOM Elements
 const userActionsContainer = document.getElementById("user-actions")
 const modalContainer = document.getElementById("modal-container")
@@ -134,7 +137,7 @@ function updateUI() {
                     </ul>
                 </div>
             `
-
+      setupNotificationPanel()
       // Setup logout button
       const logoutBtn = document.getElementById("logout-btn")
       if (logoutBtn) {
@@ -533,7 +536,7 @@ function toggleNotificationPanel() {
 }
 
 // Load notifications
-async function loadNotifications() {
+export async function loadNotifications() {
   const notificationPanel = document.getElementById("notification-panel")
   const notificationList = document.getElementById("notification-list")
   const notificationLoading = document.getElementById("notification-loading")
@@ -620,24 +623,6 @@ async function loadNotifications() {
   }
 }
 
-// Get notification icon based on type
-function getNotificationIcon(type) {
-  switch (type) {
-    case "comment":
-      return '<i class="fas fa-comment"></i>'
-    case "reply":
-      return '<i class="fas fa-reply"></i>'
-    case "like":
-      return '<i class="fas fa-thumbs-up"></i>'
-    case "mention":
-      return '<i class="fas fa-at"></i>'
-    case "system":
-      return '<i class="fas fa-bell"></i>'
-    default:
-      return '<i class="fas fa-bell"></i>'
-  }
-}
-
 // Update notification count
 async function updateNotificationCount() {
   const notificationCount = document.getElementById("notification-count")
@@ -671,6 +656,26 @@ async function updateNotificationCount() {
     notificationCount.style.display = "none";
   }
 }
+
+
+// Get notification icon based on type
+function getNotificationIcon(type) {
+  switch (type) {
+    case "comment":
+      return '<i class="fas fa-comment"></i>'
+    case "reply":
+      return '<i class="fas fa-reply"></i>'
+    case "like":
+      return '<i class="fas fa-thumbs-up"></i>'
+    case "mention":
+      return '<i class="fas fa-at"></i>'
+    case "system":
+      return '<i class="fas fa-bell"></i>'
+    default:
+      return '<i class="fas fa-bell"></i>'
+  }
+}
+
 
 // Tạo các hàm toàn cục để gọi từ HTML
 window.loadPosts = loadPosts
