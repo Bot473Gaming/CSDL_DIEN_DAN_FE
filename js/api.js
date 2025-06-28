@@ -494,8 +494,8 @@ const api = {
     return await apiCall('/post', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(postData)
     })
@@ -509,7 +509,8 @@ const api = {
     return await apiCall(`/post/${id}`, {
       method: 'PUT',
       headers: { 
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(postData)
     });
@@ -523,7 +524,8 @@ const api = {
     return await apiCall(`/post/${id}`, {
       method: 'DELETE',
       headers: { 
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
     });
   },
@@ -536,7 +538,8 @@ const api = {
     return await apiCall(`/post/${id}/lock`, {
       method: 'PUT',
       headers: { 
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
     });
   },
