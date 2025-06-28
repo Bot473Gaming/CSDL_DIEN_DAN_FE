@@ -7,7 +7,7 @@ const closeNotificationsBtn = document.querySelector(".close-notifications")
 
 // Get token from localStorage
 import { API_URL, token, currentUser } from './config.js';
-
+import { updateNotificationCount } from './main.js';
 
 // Initialize notifications
 document.addEventListener("DOMContentLoaded", () => {
@@ -57,27 +57,27 @@ export function setupNotificationPanel() {
 function toggleNotificationPanel() {
   if (!notificationPanel) return
 
-  notificationPanel.classList.toggle("active")
+  notificationPanel.classList.add("active")
 }
 
 // Close notification panel
 function closeNotificationPanel() {
   if (!notificationPanel) return
-
+  
   notificationPanel.classList.remove("active")
 }
 
 // Load notifications
 async function loadNotifications() {
   if (!token || !notificationList) return
-
+  console.log("mmmmm")
   try {
     // Show loading state
     notificationList.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i></div>'
 
     // Fetch notifications from API
     const data = await api.getNotifications({}, token)
-    const notifications = data.data.notifications || data || []
+    const notifications = data.data.notifications || []
 
     if (notifications.length === 0) {
       notificationList.innerHTML = '<div class="empty-state">Không có thông báo nào</div>'
@@ -97,17 +97,13 @@ async function loadNotifications() {
       else if (notification.type.includes('report')) icon = 'fa-flag'
       
       notificationItems += `
-        <div class="notification-item ${isRead ? '' : 'unread'}" data-id="${notification._id}">
-          <div class="notification-icon">
-            <i class="fas ${icon}"></i>
-          </div>
+        <div class="notification-item mark-read ${isRead ? '' : 'unread'}" data-id="${notification._id}">        
           <div class="notification-content">
             <div class="notification-text">${notification.content}</div>
             <div class="notification-time">${formattedDate}</div>
           </div>
           <div class="notification-actions">
-            ${isRead ? '' : '<button class="mark-read" title="Đánh dấu đã đọc"><i class="fas fa-check"></i></button>'}
-            <button class="delete-notification" title="Xóa thông báo"><i class="fas fa-times"></i></button>
+            <button class="delete-notification" title="Xóa thông báo">xóa thông báo</button>
           </div>
         </div>
       `
@@ -142,10 +138,11 @@ function setupNotificationActions() {
   const deleteBtns = notificationList.querySelectorAll('.delete-notification')
   deleteBtns.forEach(btn => {
     btn.addEventListener('click', async (e) => {
-      const notificationItem = e.target.closest('.notification-item')
+      const button = e.currentTarget // luôn là chính nút delete
+      const notificationItem = button.closest('.notification-item')
       const notificationId = notificationItem.dataset.id
+      notificationItem.style.display = "none"
       await deleteNotification(notificationId, notificationItem)
-      await loadNotifications()
     })
   })
 
@@ -196,7 +193,7 @@ async function deleteNotification(notificationId, notificationItem) {
       if (notificationList.children.length === 0) {
         notificationList.innerHTML = '<div class="empty-state">Không có thông báo nào</div>'
       }
-      
+
       // Update notification count
       updateNotificationCount()
     }, 0)
@@ -228,34 +225,34 @@ async function markAllAsRead() {
 }
 
 // Update notification count
-export async function updateNotificationCount() {
-  if (!token || !notificationCount) return
+// export async function updateNotificationCount() {
+//   if (!token || !notificationCount) return
 
-  try {
-    // Try to get unread count directly if the endpoint is available
-    let unreadCount = 0
-    try {
-      const result = await api.getUnreadNotificationCount(token)
-      unreadCount = result.count || 0
-    } catch (e) {
-      // If unread count endpoint fails, fallback to counting from notifications
-      const result = await api.getNotifications({ isRead: false }, token)
-      const notifications = result.notifications || result || []
-      unreadCount = notifications.length
-    }
+//   try {
+//     // Try to get unread count directly if the endpoint is available
+//     let unreadCount = 0
+//     try {
+//       const result = await api.getUnreadNotificationCount(token)
+//       unreadCount = result.count || 0
+//     } catch (e) {
+//       // If unread count endpoint fails, fallback to counting from notifications
+//       const result = await api.getNotifications({ isRead: false }, token)
+//       const notifications = result.notifications || result || []
+//       unreadCount = notifications.length
+//     }
 
-    if (unreadCount > 0) {
-      notificationCount.textContent = unreadCount
-      notificationCount.style.display = "flex"
-    } else {
-      notificationCount.style.display = "none"
-    }
-  } catch (error) {
-    console.error("Error updating notification count:", error)
-    // Hide notification count on error
-    notificationCount.style.display = "none"
-  }
-}
+//     if (unreadCount > 0) {
+//       notificationCount.textContent = unreadCount
+//       notificationCount.style.display = "flex"
+//     } else {
+//       notificationCount.style.display = "none"
+//     }
+//   } catch (error) {
+//     console.error("Error updating notification count:", error)
+//     // Hide notification count on error
+//     notificationCount.style.display = "none"
+//   }
+// }
 
 // Format date
 function formatDate(date) {

@@ -536,7 +536,7 @@ function toggleNotificationPanel() {
 }
 
 // Load notifications
-export async function loadNotifications() {
+async function loadNotifications() {
   const notificationPanel = document.getElementById("notification-panel")
   const notificationList = document.getElementById("notification-list")
   const notificationLoading = document.getElementById("notification-loading")
@@ -572,9 +572,6 @@ export async function loadNotifications() {
         .map(
           (notification) => `
             <div class="notification-item ${notification.read ? "" : "unread"}" data-id="${notification._id}">
-              <div class="notification-icon">
-                ${getNotificationIcon(notification.type)}
-              </div>
               <div class="notification-content">
                 <div class="notification-text">${notification.content}</div>
                 <div class="notification-date">${formatDate(notification.createdAt)}</div>
@@ -624,7 +621,7 @@ export async function loadNotifications() {
 }
 
 // Update notification count
-async function updateNotificationCount() {
+export async function updateNotificationCount() {
   const notificationCount = document.getElementById("notification-count")
   if (!notificationCount || !token) return
 
