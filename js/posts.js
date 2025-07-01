@@ -768,9 +768,7 @@ async function setupPostDetailActions(post) {
           let errorMessage = "Đã xảy ra lỗi khi xóa bài viết"
           if (error.status === 500) {
             errorMessage = "Lỗi server (500) - Có thể bài viết này có bình luận nên không thể xóa. Vui lòng xóa tất cả bình luận trước khi xóa bài viết."
-            setTimeout(() => {
-              window.location.href = "index.html"
-            }, 2000)
+
           } else if (error.status === 403) {
             errorMessage = "Bạn không có quyền xóa bài viết này"
           } else if (error.status === 404 || error.message === "Post not found") {
