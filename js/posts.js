@@ -746,7 +746,10 @@ async function setupPostDetailActions(post) {
             } else {
               alert("Đã xóa bài viết thành công")
             }
-            window.location.href = "index.html"
+            window.location.reload();
+            setTimeout(() => {
+              window.location.href = "index.html";
+            }, 500);
           } else {
             console.error("Delete failed - response:", response)
             throw new Error(response.message || response.error || "Xóa thất bại")
@@ -765,17 +768,18 @@ async function setupPostDetailActions(post) {
           let errorMessage = "Đã xảy ra lỗi khi xóa bài viết"
           if (error.status === 500) {
             errorMessage = "Lỗi server (500) - Có thể bài viết này có bình luận nên không thể xóa. Vui lòng xóa tất cả bình luận trước khi xóa bài viết."
-            // Even with 500 error, redirect to home page after 2 seconds
             setTimeout(() => {
               window.location.href = "index.html"
             }, 2000)
           } else if (error.status === 403) {
             errorMessage = "Bạn không có quyền xóa bài viết này"
-          } else if (error.status === 404) {
+          } else if (error.status === 404 || error.message === "Post not found") {
             errorMessage = "Không tìm thấy bài viết để xóa. Chuyển về trang chủ."
+            window.location.reload();
             setTimeout(() => {
-              window.location.href = "index.html"
-            }, 2000)
+              window.location.href = "index.html";
+            }, 500);
+            return;
           } else if (error.status === 409) {
             errorMessage = "Không thể xóa bài viết vì có bình luận. Vui lòng xóa tất cả bình luận trước."
           } else if (error.message) {
@@ -998,8 +1002,8 @@ function setupCommentActions(postId) {
           const response = await api.deleteComment(commentId)
           if (response.success) {
             alert("Đã xóa bình luận thành công")
-            // Reload comments to update the list
-            loadComments(postId)
+            // Reload the page to update the list
+            window.location.reload()
           } else {
             throw new Error(response.message || "Xóa thất bại")
           }
@@ -1291,8 +1295,8 @@ async function handleEditComment(form, commentId, postId, closeModal) {
     if (response.success) {
       alert("Cập nhật bình luận thành công")
       closeModal()
-      // Reload comments to show updated content
-      loadComments(postId)
+      // Reload the page to show updated comment
+      window.location.reload()
     } else {
       throw new Error(response.message || "Cập nhật thất bại")
     }
