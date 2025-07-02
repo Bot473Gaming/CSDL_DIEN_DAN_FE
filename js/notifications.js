@@ -79,14 +79,17 @@ async function loadNotifications() {
     const data = await api.getNotifications({}, token)
     const notifications = data.data.notifications || []
 
-    if (notifications.length === 0) {
+    // Lọc thông báo theo userId hiện tại
+    const filteredNotifications = notifications.filter(noti => noti.userId === currentUser._id)
+
+    if (filteredNotifications.length === 0) {
       notificationList.innerHTML = '<div class="empty-state">Không có thông báo nào</div>'
       return
     }
 
     // Create notification items
     let notificationItems = ''
-    notifications.forEach(notification => {
+    filteredNotifications.forEach(notification => {
       const isRead = notification.isRead
       const date = new Date(notification.createdAt)
       const formattedDate = formatDate(date)

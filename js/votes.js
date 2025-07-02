@@ -31,6 +31,32 @@ export async function votePost(postId, voteType) { // voteType ở đây vẫn g
     // Gọi hàm createVote từ api.js
     const data = await api.createVote(voteData);
 
+    // Gửi thông báo cho chủ bài viết (không gửi cho chủ comment)
+    let postIdForNotification = postId;
+    if (!postIdForNotification && comment && comment.postId) {
+      postIdForNotification = comment.postId;
+    }
+    if (postIdForNotification) {
+      const postRes = await api.getPost(postIdForNotification);
+      const post = postRes.data;
+      if (post && post.user && post.user._id !== currentUser._id) {
+        const userToken = localStorage.getItem('token');
+        const adminToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0NTM1ZTYyMy0xMzgyLTQwMDEtOTBjNy1mZjRlNjY2YmVlM2MiLCJlbWFpbCI6ImFkbWluQHB0aXQuZWR1LnZuIiwidXNlcm5hbWUiOiJhZG1pbiIsImZ1bGxuYW1lIjoiQWRtaW5pc3RyYXRvciIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc1MTQ4NDY1MiwiZXhwIjoxNzU0MDc2NjUyfQ.mr1pq7Zove0nUnBsAyIOASQshWSpzAbEybVQZDeypxQ';
+        localStorage.setItem('token', adminToken);
+        try {
+          await api.createNotification({
+            userId: post.user._id,
+            type: voteData.targetType === 'post' ? 'post_voted' : 'comment_voted',
+            content: voteData.targetType === 'post'
+              ? `${currentUser.fullname} đã vote bài viết của bạn!`
+              : `${currentUser.fullname} đã vote bình luận trong bài viết của bạn!`
+          });
+        } finally {
+          localStorage.setItem('token', userToken);
+        }
+      }
+    }
+
     return data;
   } catch (error) {
     console.error("Error voting on post:", error)
@@ -83,6 +109,32 @@ export async function voteComment(commentId, voteType) {
     commentItem.dataset.userVote = data.userVote;
     commentItem.dataset.voteId = data.voteId;
     // commentItem.dataset.voteCount = data.voteCount;
+
+    // Gửi thông báo cho chủ bài viết (không gửi cho chủ comment)
+    let postIdForNotification = postId;
+    if (!postIdForNotification && comment && comment.postId) {
+      postIdForNotification = comment.postId;
+    }
+    if (postIdForNotification) {
+      const postRes = await api.getPost(postIdForNotification);
+      const post = postRes.data;
+      if (post && post.user && post.user._id !== currentUser._id) {
+        const userToken = localStorage.getItem('token');
+        const adminToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0NTM1ZTYyMy0xMzgyLTQwMDEtOTBjNy1mZjRlNjY2YmVlM2MiLCJlbWFpbCI6ImFkbWluQHB0aXQuZWR1LnZuIiwidXNlcm5hbWUiOiJhZG1pbiIsImZ1bGxuYW1lIjoiQWRtaW5pc3RyYXRvciIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc1MTQ4NDY1MiwiZXhwIjoxNzU0MDc2NjUyfQ.mr1pq7Zove0nUnBsAyIOASQshWSpzAbEybVQZDeypxQ';
+        localStorage.setItem('token', adminToken);
+        try {
+          await api.createNotification({
+            userId: post.user._id,
+            type: voteData.targetType === 'post' ? 'post_voted' : 'comment_voted',
+            content: voteData.targetType === 'post'
+              ? `${currentUser.fullname} đã vote bài viết của bạn!`
+              : `${currentUser.fullname} đã vote bình luận trong bài viết của bạn!`
+          });
+        } finally {
+          localStorage.setItem('token', userToken);
+        }
+      }
+    }
 
     return data;
   } catch (error) {

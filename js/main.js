@@ -626,20 +626,12 @@ export async function updateNotificationCount() {
   if (!notificationCount || !token) return
 
   try {
-    // Try to get unread count directly if the endpoint is available
     let unreadCount = 0;
-    try {
-      const response = await api.getUnreadNotificationCount(token);
-      if (response.success) {
-        unreadCount = response.data.count || 0;
-      }
-    } catch (e) {
-      // If unread count endpoint fails, fallback to counting from notifications
-      const response = await api.getNotifications({ isRead: false }, token);
-      if (response.success) {
-        const notifications = response.data.notifications || response.data || [];
-        unreadCount = notifications.length;
-      }
+    const response = await api.getNotifications({ isRead: false }, token);
+    if (response.success) {
+      const notifications = response.data.notifications || response.data || [];
+      const filtered = notifications.filter(noti => noti.userId === currentUser._id);
+      unreadCount = filtered.length;
     }
 
     if (unreadCount > 0) {
