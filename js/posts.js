@@ -205,16 +205,31 @@ async function loadComments(postId) {
   if (!commentsList || !commentsLoading) return
 
   try {
-    // Get comments for the post
     const response = await api.getComments({ postId })
     if (!response.success) {
       throw new Error(response.message || "Không thể tải bình luận")
     }
 
-    const comments = response.data.comments || response.data || []
+    const allComments = response.data.comments || response.data || []
     const totlaComment = response.data.total || 0
 
-    
+    // Đảm bảo mọi comment và reply đều có user
+    allComments.forEach(comment => ensureUserForReplies(comment, comment.user))
+
+    // Tạo map để tra cứu comment theo id
+    const commentMap = {}
+    allComments.forEach(c => { commentMap[c._id] = c; c.replies = [] })
+
+    // Gán replies vào đúng cha dựa vào parentCommentId
+    allComments.forEach(c => {
+      if (c.parentCommentId && commentMap[c.parentCommentId]) {
+        commentMap[c.parentCommentId].replies.push(c)
+      }
+    })
+
+    // Lọc ra comment gốc (không có parentCommentId)
+    const rootComments = allComments.filter(c => !c.parentCommentId)
+
     // Hide loading spinner
     commentsLoading.style.display = "none"
 
@@ -235,8 +250,6 @@ async function loadComments(postId) {
             <button type="submit" class="btn btn-primary">Gửi bình luận</button>
           </form>
         `
-
-        // Setup comment form
         const commentForm = document.getElementById("comment-form")
         if (commentForm) {
           commentForm.addEventListener("submit", async (e) => {
@@ -258,14 +271,14 @@ async function loadComments(postId) {
 
     // Render comments
     const totalComment=await TotalVotesForComments()
-    if (comments.length === 0) {
+    if (rootComments.length === 0) {
       commentsList.innerHTML = `
         <div class="no-comments">
           <p>Chưa có bình luận nào.</p>
         </div>
       `
     } else {
-      commentsList.innerHTML = comments.map(comment => renderComment(comment,totalComment)).join("")
+      commentsList.innerHTML = rootComments.map(comment => renderComment(comment,totalComment)).join("")
     }
 
     // Setup comment actions
@@ -309,16 +322,20 @@ async function TotalVotesForComments() {
   }
 }
 // Render a single comment
-function renderComment(comment,totalComment) {
-  // console.log("mmmm",comment)
+function renderComment(comment, totalComment) {
   const vote = comment.votes?.[0] || {};
   const userVote = vote.voteValue || 0;
   const voteId = vote._id || '';
-  console.log("mmmm",userVote)
   
+  // Đảm bảo luôn có user cho comment/reply
+  const user = comment.user || { fullname: 'Ẩn danh', avatar: 'assets/images/default-avatar.png' };
+
   // Check if current user is the author of this comment
-  const isCommentAuthor = currentUser._id === comment.user?._id
+  const isCommentAuthor = currentUser._id === user._id
   const isAdmin = currentUser.role === 'admin'
+  
+  // Chỉ hiển thị nút reply cho comment gốc (không phải reply)
+  const showReplyButton = !comment.parentId && token
   
   return `
     <div class="comment-item ${comment.parentId ? 'reply' : ''}" 
@@ -326,9 +343,9 @@ function renderComment(comment,totalComment) {
          data-user-vote="${userVote}" 
          data-vote-id="${voteId}" >
       <div class="comment-author">
-        <img src="${comment.user?.avatar || 'assets/images/default-avatar.png'}" alt="${comment.user?.fullname}">
+        <img src="${user.avatar || 'assets/images/default-avatar.png'}" alt="${user.fullname || 'Ẩn danh'}">
         <div>
-          <div class="author-name">${comment.user?.fullname}</div>
+          <div class="author-name">${user.fullname || 'Ẩn danh'}</div>
           <div class="comment-date">${formatDate(comment.createdAt)}</div>
         </div>
       </div>
@@ -344,7 +361,7 @@ function renderComment(comment,totalComment) {
           </button>
         </div>
         <div class="comment-buttons">
-          ${token ? `
+          ${showReplyButton ? `
             <button class="comment-btn reply-btn" data-id="${comment._id}">
               <i class="fas fa-reply"></i> Trả lời
             </button>
@@ -365,7 +382,7 @@ function renderComment(comment,totalComment) {
       ${comment.isEdited ? '<div class="comment-edited">(Đã chỉnh sửa)</div>' : ''}
       <div class="reply-form-container" id="reply-form-${comment._id}"></div>
       <div class="replies-container" id="replies-${comment._id}">
-        ${(comment.replies || []).map(reply => renderComment(reply)).join('')}
+        ${(comment.replies || []).map(reply => renderComment(reply, totalComment)).join('')}
       </div>
     </div>
   `
@@ -391,8 +408,10 @@ async function submitComment(postId, content, parentCommentId = null) {
     const response = await api.createComment(commentData)
     const newComment = response.data 
 
+    // Đảm bảo luôn có user cho comment/reply
     if (!newComment.user) {
       newComment.user = {
+        _id: currentUser._id,
         fullname: currentUser.fullname,
         avatar: currentUser.avatar
       }
@@ -883,7 +902,8 @@ function setupCommentActions(postId) {
       }
     });
   });
-  // Reply buttons
+
+  // Reply buttons - Cải thiện chức năng trả lời
   const replyButtons = document.querySelectorAll(".reply-btn")
   replyButtons.forEach((button) => {
     button.addEventListener("click", () => {
@@ -893,28 +913,39 @@ function setupCommentActions(postId) {
       }
 
       const commentId = button.dataset.id
-      const commentItem = document.getElementById(`comment-${commentId}`)
-      const replyForm = commentItem.querySelector(".reply-form")
+      const commentItem = document.querySelector(`.comment-item[data-id="${commentId}"]`)
+      
+      if (!commentItem) return
 
-      if (replyForm) {
-        replyForm.remove()
+      // Kiểm tra xem đã có form reply chưa
+      const existingReplyForm = commentItem.querySelector(".reply-form-container .reply-form")
+      if (existingReplyForm) {
+        existingReplyForm.remove()
         return
       }
 
+      // Tạo form reply mới
+      const replyFormContainer = commentItem.querySelector(".reply-form-container")
       const newReplyForm = document.createElement("form")
       newReplyForm.className = "reply-form"
       newReplyForm.innerHTML = `
-        <textarea name="content" placeholder="Viết phản hồi của bạn..." required></textarea>
-        <div class="form-actions">
-          <button type="button" class="btn btn-outline cancel-reply">Hủy</button>
-          <button type="submit" class="btn btn-primary">Gửi phản hồi</button>
+        <div class="reply-form-header">
+          <span>Trả lời bình luận của ${commentItem.querySelector('.author-name').textContent}</span>
+        </div>
+        <div class="reply-form-content">
+          <textarea name="content" placeholder="Viết phản hồi của bạn..." required></textarea>
+          <div class="form-actions">
+            <button type="button" class="btn btn-outline cancel-reply">Hủy</button>
+            <button type="submit" class="btn btn-primary">Gửi phản hồi</button>
+          </div>
         </div>
       `
 
-      const repliesContainer = commentItem.querySelector(".comment-replies") || document.createElement("div")
-      repliesContainer.className = "comment-replies"
-      commentItem.appendChild(repliesContainer)
-      repliesContainer.appendChild(newReplyForm)
+      replyFormContainer.appendChild(newReplyForm)
+
+      // Focus vào textarea
+      const textarea = newReplyForm.querySelector("textarea")
+      textarea.focus()
 
       // Setup cancel button
       const cancelBtn = newReplyForm.querySelector(".cancel-reply")
@@ -929,24 +960,25 @@ function setupCommentActions(postId) {
         const content = newReplyForm.querySelector("textarea[name='content']").value.trim()
         if (!content) return
 
+        // Disable form while submitting
+        const submitBtn = newReplyForm.querySelector("button[type='submit']")
+        const originalText = submitBtn.textContent
+        submitBtn.disabled = true
+        submitBtn.textContent = "Đang gửi..."
+
         try {
-          const response = await fetch(`${API_URL}/comments/${commentId}/replies`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ content }),
-          })
-
-          if (!response.ok) {
-            throw new Error("Failed to create reply")
-          }
-
-          loadComments(postId)
+          // Sử dụng hàm submitComment với parentCommentId
+          await submitComment(postId, content, commentId)
+          
+          // Xóa form sau khi gửi thành công
+          newReplyForm.remove()
         } catch (error) {
           console.error("Error creating reply:", error)
           alert("Đã xảy ra lỗi khi gửi phản hồi. Vui lòng thử lại sau.")
+        } finally {
+          // Re-enable form
+          submitBtn.disabled = false
+          submitBtn.textContent = originalText
         }
       })
     })
@@ -999,11 +1031,10 @@ function setupCommentActions(postId) {
         try {
           const response = await api.deleteComment(commentId)
           if (response.success) {
-            alert("Đã xóa bình luận thành công")
-            // Reload the page to update the list
-            window.location.reload()
+            // Reload comments to update the list
+            loadComments(postId)
           } else {
-            throw new Error(response.message || "Xóa thất bại")
+            alert("Đã xảy ra lỗi khi xóa bình luận.")
           }
         } catch (error) {
           console.error("Error deleting comment:", error)
@@ -1367,3 +1398,13 @@ function showLoginModal() {
 
 // Tạo các hàm toàn cục để gọi từ HTML
 window.loadComments = loadComments
+
+// Hàm đệ quy để đảm bảo mọi comment/reply đều có user
+function ensureUserForReplies(comment, parentUser) {
+  if (!comment.user) {
+    comment.user = parentUser || { fullname: 'Ẩn danh', avatar: 'assets/images/default-avatar.png' }
+  }
+  if (Array.isArray(comment.replies)) {
+    comment.replies.forEach(reply => ensureUserForReplies(reply, comment.user))
+  }
+}
