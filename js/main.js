@@ -108,9 +108,7 @@ async function fetchCurrentUser() {
   } catch (error) {
     console.error("Error fetching current user:", error)
     // If token is invalid, logout
-    if (error.message.includes("401") || error.message.includes("Unauthorized")) {
-      logout()
-    }
+    logout()
   }
 }
 
