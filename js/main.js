@@ -30,6 +30,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Load initial data
   initializeHomePage()
+
+  setupSearchForm()
 })
 
 // Initialize homepage data
@@ -508,6 +510,12 @@ function setupMobileMenu() {
 function setupSearchForm() {
   const searchForm = document.getElementById("search-form")
   if (!searchForm) return
+
+  // Đặt giá trị cho input tìm kiếm khi trang load
+  const urlParams = new URLSearchParams(window.location.search);
+  const searchValue = urlParams.get('search') || '';
+  const searchInput = searchForm.querySelector("input[name='search']");
+  if (searchInput) searchInput.value = searchValue;
 
   searchForm.addEventListener("submit", (e) => {
     e.preventDefault()
