@@ -14,6 +14,26 @@ const postCategory = document.getElementById("post-category")
 import { API_URL, token, currentUser } from './config.js';
 import { votePost, voteComment } from './votes.js'; 
 
+// Store current post ID for refresh
+let currentPostId = null;
+
+// Listen for storage changes (login/logout)
+window.addEventListener('storage', (e) => {
+  if (e.key === 'token' || e.key === 'currentUser') {
+    console.log('User authentication changed, refreshing comments...');
+    if (currentPostId) {
+      loadComments(currentPostId);
+    }
+  }
+});
+
+// Also listen for custom events
+window.addEventListener('userChanged', () => {
+  console.log('User changed event detected, refreshing comments...');
+  if (currentPostId) {
+    loadComments(currentPostId);
+  }
+});
 
 // Format date function
 function formatDate(dateString) {
@@ -51,8 +71,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 })
 
-async function TotalVotes() {
+async function TotalVotes(postId = null, postData = null) {
   try {
+    // Nếu có postData và có voteCount, sử dụng nó
+    if (postData && postData.voteCount !== undefined) {
+      return { [postId]: postData.voteCount };
+    }
+    
     const response = await api.getVotes(); // Gọi API có sẵn của bạn
     const votes = response?.data?.votes || []; // An toàn nếu không có dữ liệu
 
@@ -61,14 +86,14 @@ async function TotalVotes() {
     for (const vote of votes) {
       if (vote.targetType !== 'post') continue; // ⛔ Bỏ qua vote cho comment
 
-      const postId = vote.targetId;
+      const votePostId = vote.targetId;
       const voteValue = vote.voteValue || 0;
 
-      if (!totals[postId]) {
-        totals[postId] = 0;
+      if (!totals[votePostId]) {
+        totals[votePostId] = 0;
       }
 
-      totals[postId] += voteValue;
+      totals[votePostId] += voteValue;
     }
 
     console.log("Tổng vote mỗi post:", totals);
@@ -93,6 +118,9 @@ async function loadPostDetail() {
     return
   }
 
+  // Store current post ID for refresh
+  currentPostId = postId;
+
   try {
     console.log(`Loading post detail for ID: ${postId}`)
     // const post = await api.getPost(postId)
@@ -102,7 +130,7 @@ async function loadPostDetail() {
     
     // Hide loading spinner
     if (postLoading) postLoading.style.display = "none"
-    const totalVote=await TotalVotes()
+    const totalVote=await TotalVotes(postId, post)
     const idPost=post._id
     
     // Check if current user is the author
@@ -362,7 +390,7 @@ async function loadComments(postId) {
         </div>
       `
     } else {
-      const voteTotals = await TotalVotesForComments()
+      const voteTotals = await TotalVotesForComments(comments)
       commentsList.innerHTML = rootComments.map(comment => renderComment(comment, voteTotals)).join("")
     }
 
@@ -379,8 +407,24 @@ async function loadComments(postId) {
   }
 }
 
-async function TotalVotesForComments() {
+async function TotalVotesForComments(comments = null) {
   try {
+    // Nếu có comments data và có voteCount, sử dụng nó
+    if (comments && Array.isArray(comments)) {
+      const totals = {};
+      comments.forEach(comment => {
+        if (comment.voteCount !== undefined) {
+          totals[comment._id] = comment.voteCount;
+        }
+      });
+      
+      // Nếu tất cả comments đều có voteCount, trả về kết quả
+      if (Object.keys(totals).length === comments.length) {
+        console.log("Tổng vote mỗi comment từ voteCount:", totals);
+        return totals;
+      }
+    }
+    
     const response = await api.getVotes(); // Gọi API lấy toàn bộ votes
     const votes = response?.data?.votes || []; // Phòng khi không có dữ liệu
     console.log("mmmmm",votes)
@@ -430,10 +474,17 @@ function renderComment(comment,totalComment) {
   const isCommentAuthor = currentUser._id === authorId
   const isAdmin = currentUser.role === 'admin'
   
+  // Determine user's vote status based on current user
+  let currentUserVote = 0;
+  if (token && currentUser && comment.votes && Array.isArray(comment.votes)) {
+    const userVote = comment.votes.find(v => v.userId === currentUser._id);
+    currentUserVote = userVote ? userVote.voteValue : 0;
+  }
+  
   return `
     <div class="comment-item ${comment.parentCommentId ? 'reply' : ''}" 
          data-id="${comment._id}" 
-         data-user-vote="${userVote}" 
+         data-user-vote="${currentUserVote}" 
          data-vote-id="${voteId}" >
       <div class="comment-author">
         <img src="${authorAvatar}" alt="${authorName}">
@@ -445,11 +496,11 @@ function renderComment(comment,totalComment) {
       <div class="comment-content" id="comment-content-${comment._id}">${comment.content}</div>
       <div class="comment-actions">
         <div class="vote-buttons">
-          <button class="vote-btn upvote ${comment.userVote === 1 ? 'upvoted' : ''}" data-id="${comment._id}">
+          <button class="vote-btn upvote ${currentUserVote === 1 ? 'upvoted' : ''}" data-id="${comment._id}">
             <i class="fas fa-thumbs-up"></i>
           </button>
           <span class="vote-count">${totalComment[comment._id] || 0}</span>
-          <button class="vote-btn downvote ${comment.userVote === -1 ? 'downvoted' : ''}" data-id="${comment._id}">
+          <button class="vote-btn downvote ${currentUserVote === -1 ? 'downvoted' : ''}" data-id="${comment._id}">
             <i class="fas fa-thumbs-down"></i>
           </button>
         </div>
@@ -514,7 +565,7 @@ async function submitComment(postId, content, parentCommentId = null) {
     }
 
     // Tạo phần tử HTML từ bình luận mới
-    const totalComment=await TotalVotesForComments()
+    const totalComment=await TotalVotesForComments([newComment])
     const wrapper = document.createElement("div")
     wrapper.innerHTML = renderComment(newComment,totalComment)
     const newCommentElement = wrapper.firstElementChild 
@@ -836,11 +887,11 @@ async function setupPostDetailActions(post) {
       const isUndo = post.userVote;
     
       try {
-        console.log("mmmm",post)
+        console.log("Starting downvote for post:", post._id, "Current userVote:", post.userVote);
         if (isUndo === -1) {
           // Unvote
+          console.log("Unvoting post");
           voteCount.textContent = parseInt(voteCount.textContent) + 1;
-          console.log("mmmm",post)
           downvoteBtn.classList.remove("downvoted");
           post.userVote = 0;
           await api.deleteVote(post.voteId);
@@ -1089,37 +1140,49 @@ function setupCommentActions(postId) {
       if (!token) return showLoginModal();
 
       try {
-        console.log("lkkkkkk",userVote)
+        console.log("Starting upvote for comment:", commentId, "Current userVote:", userVote);
         if (userVote === 1) {
           // Unvote
+          console.log("Unvoting comment");
           userVote = 0;
-          voteCountSpan.textContent = parseInt( voteCountSpan.textContent) - 1;
+          voteCountSpan.textContent = parseInt(voteCountSpan.textContent) - 1;
           upvoteBtn.classList.remove("upvoted");
           await api.deleteVote(voteId);
           commentItem.dataset.voteId = '';
+          commentItem.dataset.userVote = "0";
         } else {
-          // Nếu đã downvote trước đó, +2. Nếu chưa vote, +1
+          // Vote up
+          console.log("Voting up comment");
           upvoteBtn.classList.add("upvoted");
           downvoteBtn.classList.remove("downvoted");
+          
           if(userVote === 0){
-            voteCountSpan.textContent = parseInt( voteCountSpan.textContent) + 1
+            voteCountSpan.textContent = parseInt(voteCountSpan.textContent) + 1;
             userVote = 1;
-            const data = await voteComment(commentId, 1);
-          }else{
-            voteCountSpan.textContent = parseInt( voteCountSpan.textContent) + 2
+          } else {
+            voteCountSpan.textContent = parseInt(voteCountSpan.textContent) + 2;
             userVote = 1;
-            const data = await voteComment(commentId, 1);
           }
+          
+          const data = await voteComment(commentId, 1);
+          console.log("Vote response:", data);
           commentItem.dataset.voteId = data?.voteId || '';
-  
+          commentItem.dataset.userVote = "1";
         }
-
-        // Cập nhật dataset
-        // commentItem.dataset.voteCount = parseInt( voteCountSpan.textContent);
-        // commentItem.dataset.userVote = userVote;
         
       } catch (error) {
         console.error("Error voting on comment (upvote):", error);
+        // Revert UI changes on error
+        if (userVote === 1) {
+          voteCountSpan.textContent = parseInt(voteCountSpan.textContent) - 1;
+          upvoteBtn.classList.remove("upvoted");
+          userVote = 0;
+        } else {
+          voteCountSpan.textContent = parseInt(voteCountSpan.textContent) + 1;
+          upvoteBtn.classList.add("upvoted");
+          userVote = 1;
+        }
+        alert("Đã xảy ra lỗi khi vote. Vui lòng thử lại sau.");
       }
     });
 
@@ -1127,37 +1190,49 @@ function setupCommentActions(postId) {
       if (!token) return showLoginModal();
 
       try {
+        console.log("Starting downvote for comment:", commentId, "Current userVote:", userVote);
         if (userVote === -1) {
           // Unvote
+          console.log("Unvoting comment");
           userVote = 0;
-          voteCountSpan.textContent = parseInt( voteCountSpan.textContent) + 1
+          voteCountSpan.textContent = parseInt(voteCountSpan.textContent) + 1;
           downvoteBtn.classList.remove("downvoted");
           await api.deleteVote(voteId);
           commentItem.dataset.voteId = '';
+          commentItem.dataset.userVote = "0";
         } else {
-          // Nếu đã upvote trước đó, -2. Nếu chưa vote, -1
+          // Vote down
+          console.log("Voting down comment");
           downvoteBtn.classList.add("downvoted");
           upvoteBtn.classList.remove("upvoted");
+          
           if(userVote === 0){
-            voteCountSpan.textContent = parseInt( voteCountSpan.textContent) - 1
+            voteCountSpan.textContent = parseInt(voteCountSpan.textContent) - 1;
             userVote = -1;
-            const data = await voteComment(commentId, -1);
-          }else{
-            voteCountSpan.textContent = parseInt( voteCountSpan.textContent) - 2
+          } else {
+            voteCountSpan.textContent = parseInt(voteCountSpan.textContent) - 2;
             userVote = -1;
-            const data = await voteComment(commentId, -1);
           }
+          
+          const data = await voteComment(commentId, -1);
+          console.log("Vote response:", data);
           commentItem.dataset.voteId = data?.voteId || '';
+          commentItem.dataset.userVote = "-1";
         }
-
-        // commentItem.dataset.voteId = voteId || '';
-        // commentItem.dataset.userVote = userVote;
-        // Cập nhật dataset
-        // commentItem.dataset.voteCount = parseInt( voteCountSpan.textContent);
-        // commentItem.dataset.userVote = userVote;
-        // commentItem.dataset.voteId = voteId || '';
+        
       } catch (error) {
         console.error("Error voting on comment (downvote):", error);
+        // Revert UI changes on error
+        if (userVote === -1) {
+          voteCountSpan.textContent = parseInt(voteCountSpan.textContent) + 1;
+          downvoteBtn.classList.remove("downvoted");
+          userVote = 0;
+        } else {
+          voteCountSpan.textContent = parseInt(voteCountSpan.textContent) - 1;
+          downvoteBtn.classList.add("downvoted");
+          userVote = -1;
+        }
+        alert("Đã xảy ra lỗi khi vote. Vui lòng thử lại sau.");
       }
     });
   });
@@ -1220,73 +1295,71 @@ function setupCommentActions(postId) {
   });
 
   // Report buttons
-  const reportButtons = document.querySelectorAll(".report-btn")
+  const reportButtons = document.querySelectorAll(".report-btn");
   reportButtons.forEach((button) => {
     button.addEventListener("click", () => {
       if (!token) {
-        showLoginModal()
-        return
+        showLoginModal();
+        return;
       }
 
-      const commentId = button.dataset.id
-      showReportModal("comment", commentId)
-    })
-  })
+      const commentId = button.dataset.id;
+      showReportModal("comment", commentId);
+    });
+  });
 
   // Edit comment buttons
-  const editCommentButtons = document.querySelectorAll(".edit-comment-btn")
+  const editCommentButtons = document.querySelectorAll(".edit-comment-btn");
   editCommentButtons.forEach((button) => {
     button.addEventListener("click", () => {
       if (!token) {
-        showLoginModal()
-        return
+        showLoginModal();
+        return;
       }
 
-      const commentId = button.dataset.id
-      const commentItem = button.closest(".comment-item")
-      const commentContent = commentItem.querySelector(`#comment-content-${commentId}`)
-      const currentContent = commentContent.textContent
+      const commentId = button.dataset.id;
+      const commentItem = button.closest(".comment-item");
+      const commentContent = commentItem.querySelector(`#comment-content-${commentId}`);
+      const currentContent = commentContent.textContent;
 
-      showEditCommentModal(commentId, currentContent, postId)
-    })
-  })
+      showEditCommentModal(commentId, currentContent, postId);
+    });
+  });
 
   // Delete comment buttons
-  const deleteCommentButtons = document.querySelectorAll(".delete-comment-btn")
+  const deleteCommentButtons = document.querySelectorAll(".delete-comment-btn");
   deleteCommentButtons.forEach((button) => {
     button.addEventListener("click", async () => {
       if (!token) {
-        showLoginModal()
-        return
+        showLoginModal();
+        return;
       }
 
-      const commentId = button.dataset.id
+      const commentId = button.dataset.id;
       
       if (confirm("Bạn có chắc chắn muốn xóa bình luận này?")) {
         try {
-          const response = await api.deleteComment(commentId)
+          const response = await api.deleteComment(commentId);
           if (response.success) {
-            alert("Đã xóa bình luận thành công")
+            alert("Đã xóa bình luận thành công");
             // Reload the page to update the list
-            window.location.reload()
+            window.location.reload();
           } else {
-            throw new Error(response.message || "Xóa thất bại")
+            throw new Error(response.message || "Xóa thất bại");
           }
         } catch (error) {
-          console.error("Error deleting comment:", error)
-          alert("Đã xảy ra lỗi khi xóa bình luận. Vui lòng thử lại sau.")
+          console.error("Error deleting comment:", error);
+          alert("Đã xảy ra lỗi khi xóa bình luận. Vui lòng thử lại sau.");
         }
       }
-    })
-  })
+    });
+  });
 }
-
-
 
 // Show report modal
 function showReportModal(type, id) {
-  const modal = document.createElement("div")
-  modal.className = "modal"
+  const modal = document.createElement("div");
+  modal.className = "modal";
   modal.innerHTML = `
     <div class="modal-content">
       <div class="modal-header">
@@ -1316,31 +1389,31 @@ function showReportModal(type, id) {
         </form>
       </div>
     </div>
-  `
+  `;
 
-  document.body.appendChild(modal)
+  document.body.appendChild(modal);
 
   // Close modal
-  const closeBtn = modal.querySelector(".close-modal")
-  const cancelBtn = modal.querySelector(".cancel-report")
+  const closeBtn = modal.querySelector(".close-modal");
+  const cancelBtn = modal.querySelector(".cancel-report");
   const closeModal = () => {
-    modal.remove()
-  }
+    modal.remove();
+  };
 
-  closeBtn.addEventListener("click", closeModal)
-  cancelBtn.addEventListener("click", closeModal)
+  closeBtn.addEventListener("click", closeModal);
+  cancelBtn.addEventListener("click", closeModal);
   modal.addEventListener("click", (e) => {
-    if (e.target === modal) closeModal()
-  })
+    if (e.target === modal) closeModal();
+  });
 
   // Handle form submission
-  const form = modal.querySelector("#report-form")
+  const form = modal.querySelector("#report-form");
   form.addEventListener("submit", async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    const formData = new FormData(form)
-    const reason = formData.get("reason")
-    const description = formData.get("description")
+    const formData = new FormData(form);
+    const reason = formData.get("reason");
+    const description = formData.get("description");
 
     try {
       const response = await fetch(`${API_URL}/reports`, {
@@ -1355,25 +1428,25 @@ function showReportModal(type, id) {
           reason,
           description,
         }),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error("Failed to submit report")
+        throw new Error("Failed to submit report");
       }
 
-      alert("Báo cáo đã được gửi thành công")
-      closeModal()
+      alert("Báo cáo đã được gửi thành công");
+      closeModal();
     } catch (error) {
-      console.error("Error submitting report:", error)
-      alert("Đã xảy ra lỗi khi gửi báo cáo. Vui lòng thử lại sau.")
+      console.error("Error submitting report:", error);
+      alert("Đã xảy ra lỗi khi gửi báo cáo. Vui lòng thử lại sau.");
     }
-  })
+  });
 }
 
 // Show edit post modal
 function showEditPostModal(post) {
-  const modal = document.createElement("div")
-  modal.className = "modal"
+  const modal = document.createElement("div");
+  modal.className = "modal";
   modal.innerHTML = `
     <div class="modal-content">
       <div class="modal-header">
@@ -1407,40 +1480,40 @@ function showEditPostModal(post) {
         </form>
       </div>
     </div>
-  `
+  `;
 
-  document.body.appendChild(modal)
+  document.body.appendChild(modal);
 
   // Load categories
-  loadCategoriesForEdit(modal, post.category?._id)
+  loadCategoriesForEdit(modal, post.category?._id);
 
   // Close modal
-  const closeBtn = modal.querySelector(".close-modal")
-  const cancelBtn = modal.querySelector(".cancel-edit")
+  const closeBtn = modal.querySelector(".close-modal");
+  const cancelBtn = modal.querySelector(".cancel-edit");
   const closeModal = () => {
-    modal.remove()
-  }
+    modal.remove();
+  };
 
-  closeBtn.addEventListener("click", closeModal)
-  cancelBtn.addEventListener("click", closeModal)
+  closeBtn.addEventListener("click", closeModal);
+  cancelBtn.addEventListener("click", closeModal);
   modal.addEventListener("click", (e) => {
-    if (e.target === modal) closeModal()
-  })
+    if (e.target === modal) closeModal();
+  });
 
   // Handle form submission
-  const form = modal.querySelector("#edit-post-form")
+  const form = modal.querySelector("#edit-post-form");
   form.addEventListener("submit", async (e) => {
-    e.preventDefault()
-    await handleEditPost(form, post._id, closeModal)
-  })
+    e.preventDefault();
+    await handleEditPost(form, post._id, closeModal);
+  });
 }
 
 // Load categories for edit form
 async function loadCategoriesForEdit(modal, selectedCategoryId) {
   try {
-    const categories = await api.getCategories()
+    const categories = await api.getCategories();
 
-    const select = modal.querySelector("select[name='categoryId']")
+    const select = modal.querySelector("select[name='categoryId']");
     select.innerHTML = `
       <option value="">Chọn danh mục</option>
       ${categories.data.categories.map(
@@ -1448,56 +1521,56 @@ async function loadCategoriesForEdit(modal, selectedCategoryId) {
         <option value="${category._id}" ${category._id === selectedCategoryId ? 'selected' : ''}>${category.name}</option>
       `,
       ).join("")}
-    `
+    `;
   } catch (error) {
-    console.error("Error loading categories:", error)
+    console.error("Error loading categories:", error);
   }
 }
 
 // Handle edit post submission
 async function handleEditPost(form, postId, closeModal) {
-  const formData = new FormData(form)
-  const title = formData.get("title").trim()
-  const content = formData.get("content").trim()
-  const categoryId = formData.get("categoryId")
-  const tagsInput = formData.get("tags").trim()
+  const formData = new FormData(form);
+  const title = formData.get("title").trim();
+  const content = formData.get("content").trim();
+  const categoryId = formData.get("categoryId");
+  const tagsInput = formData.get("tags").trim();
 
   if (!title || !content || !categoryId) {
-    alert("Vui lòng điền đầy đủ thông tin bắt buộc")
-    return
+    alert("Vui lòng điền đầy đủ thông tin bắt buộc");
+    return;
   }
 
   try {
     // Parse tags
-    const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag) : []
+    const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
 
     const postData = {
       title,
       content,
       categoryId,
       tags
-    }
+    };
 
-    const response = await api.updatePost(postId, postData)
+    const response = await api.updatePost(postId, postData);
     
     if (response.success) {
-      alert("Cập nhật bài viết thành công")
-      closeModal()
+      alert("Cập nhật bài viết thành công");
+      closeModal();
       // Reload the page to show updated content
-      window.location.reload()
+      window.location.reload();
     } else {
-      throw new Error(response.message || "Cập nhật thất bại")
+      throw new Error(response.message || "Cập nhật thất bại");
     }
   } catch (error) {
-    console.error("Error updating post:", error)
-    alert("Đã xảy ra lỗi khi cập nhật bài viết. Vui lòng thử lại sau.")
+    console.error("Error updating post:", error);
+    alert("Đã xảy ra lỗi khi cập nhật bài viết. Vui lòng thử lại sau.");
   }
 }
 
 // Show edit comment modal
 function showEditCommentModal(commentId, currentContent, postId) {
-  const modal = document.createElement("div")
-  modal.className = "modal"
+  const modal = document.createElement("div");
+  modal.className = "modal";
   modal.innerHTML = `
     <div class="modal-content">
       <div class="modal-header">
@@ -1517,122 +1590,120 @@ function showEditCommentModal(commentId, currentContent, postId) {
         </form>
       </div>
     </div>
-  `
+  `;
 
-  document.body.appendChild(modal)
+  document.body.appendChild(modal);
 
   // Close modal
-  const closeBtn = modal.querySelector(".close-modal")
-  const cancelBtn = modal.querySelector(".cancel-edit-comment")
+  const closeBtn = modal.querySelector(".close-modal");
+  const cancelBtn = modal.querySelector(".cancel-edit-comment");
   const closeModal = () => {
-    modal.remove()
-  }
+    modal.remove();
+  };
 
-  closeBtn.addEventListener("click", closeModal)
-  cancelBtn.addEventListener("click", closeModal)
+  closeBtn.addEventListener("click", closeModal);
+  cancelBtn.addEventListener("click", closeModal);
   modal.addEventListener("click", (e) => {
-    if (e.target === modal) closeModal()
-  })
+    if (e.target === modal) closeModal();
+  });
 
   // Handle form submission
-  const form = modal.querySelector("#edit-comment-form")
+  const form = modal.querySelector("#edit-comment-form");
   form.addEventListener("submit", async (e) => {
-    e.preventDefault()
-    await handleEditComment(form, commentId, postId, closeModal)
-  })
+    e.preventDefault();
+    await handleEditComment(form, commentId, postId, closeModal);
+  });
 }
 
 // Handle edit comment submission
 async function handleEditComment(form, commentId, postId, closeModal) {
-  const formData = new FormData(form)
-  const content = formData.get("content").trim()
+  const formData = new FormData(form);
+  const content = formData.get("content").trim();
 
   if (!content) {
-    alert("Vui lòng nhập nội dung bình luận")
-    return
+    alert("Vui lòng nhập nội dung bình luận");
+    return;
   }
 
   try {
     const commentData = {
       content
-    }
+    };
 
-    const response = await api.updateComment(commentId, commentData)
+    const response = await api.updateComment(commentId, commentData);
     
     if (response.success) {
-      alert("Cập nhật bình luận thành công")
-      closeModal()
+      alert("Cập nhật bình luận thành công");
+      closeModal();
       // Reload the page to show updated comment
-      window.location.reload()
+      window.location.reload();
     } else {
-      throw new Error(response.message || "Cập nhật thất bại")
+      throw new Error(response.message || "Cập nhật thất bại");
     }
   } catch (error) {
-    console.error("Error updating comment:", error)
-    alert("Đã xảy ra lỗi khi cập nhật bình luận. Vui lòng thử lại sau.")
+    console.error("Error updating comment:", error);
+    alert("Đã xảy ra lỗi khi cập nhật bình luận. Vui lòng thử lại sau.");
   }
 }
 
 // Setup create post form
 async function setupCreatePostForm() {
-  if (!createPostForm) return
+  if (!createPostForm) return;
 
   try {
     // Load categories
-    const categories = await api.getCategories()
+    const categories = await api.getCategories();
 
     postCategory.innerHTML = `
-      // <option value="">Chọn danh mục</option>
-      ${categories
-        .data.categories.map(
-          (category) => `
+      <option value="">Chọn danh mục</option>
+      ${categories.data.categories.map(
+        (category) => `
         <option value="${category._id}">${category.name}</option>
       `,
-        )
-        .join("")}
-    `
+      ).join("")}
+    `;
 
     // Setup form submission
     createPostForm.addEventListener("submit", async (e) => {
-      e.preventDefault()
+      e.preventDefault();
 
       if (!token) {
-        showLoginModal()
-        return
+        showLoginModal();
+        return;
       }
 
-      const formData = new FormData(createPostForm)
+      const formData = new FormData(createPostForm);
       const postData = {
         title: formData.get("title"),
         content: formData.get("content"),
         categoryId: formData.get("category"),
         tags: formData.get("tags").split(",").map((tag) => tag.trim()),
-      }
+      };
 
       try {
-        const response = await api.createPost(postData)
+        const response = await api.createPost(postData);
         if (response.success) {
-          alert("Tạo bài viết thành công")
-          window.location.href = "index.html"
+          alert("Tạo bài viết thành công");
+          window.location.href = "index.html";
         } else {
-          throw new Error(response.message || "Tạo bài viết thất bại")
+          throw new Error(response.message || "Tạo bài viết thất bại");
         }
       } catch (error) {
-        console.error("Error creating post:", error)
-        alert(`Đã xảy ra lỗi khi tạo bài viết: ${error.message}`)
+        console.error("Error creating post:", error);
+        alert(`Đã xảy ra lỗi khi tạo bài viết: ${error.message}`);
       }
-    })
+    });
   } catch (error) {
-    console.error("Error setting up create post form:", error)
-    alert("Đã xảy ra lỗi khi tải form. Vui lòng thử lại sau.")
+    console.error("Error setting up create post form:", error);
+    alert("Đã xảy ra lỗi khi tải form. Vui lòng thử lại sau.");
   }
 }
 
 // Show login modal
 function showLoginModal() {
-  alert("Vui lòng đăng nhập để tiếp tục.")
-  window.location.href = "login.html"
+  alert("Vui lòng đăng nhập để tiếp tục.");
+  window.location.href = "login.html";
 }
 
 // Tạo các hàm toàn cục để gọi từ HTML
-window.loadComments = loadComments
+window.loadComments = loadComments;

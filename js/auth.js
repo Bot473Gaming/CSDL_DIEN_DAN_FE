@@ -67,6 +67,9 @@ async function handleLogin(e) {
       localStorage.removeItem("rememberMe")
     }
 
+    // Trigger custom event for user change
+    window.dispatchEvent(new CustomEvent('userChanged'));
+
     // Redirect to previous page or home
     const redirect = sessionStorage.getItem("loginRedirect") || "index.html"
     sessionStorage.removeItem("loginRedirect")
@@ -136,6 +139,10 @@ async function handleRegister(e) {
     if (response.data.access_token) {
       localStorage.setItem("token", response.data.access_token)
       localStorage.setItem("currentUser", JSON.stringify(response.data.user))
+      
+      // Trigger custom event for user change
+      window.dispatchEvent(new CustomEvent('userChanged'));
+      
       window.location.href = "index.html"
     } else {
       // Redirect to login page with success message

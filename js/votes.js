@@ -73,29 +73,6 @@ export async function voteComment(commentId, voteType) {
   }
 
   try {
-    const commentItem = document.querySelector(`.comment-item[data-id="${commentId}"]`);
-    const voteId = commentItem?.dataset.voteId || null;
-    const currentUserVote = parseInt(commentItem?.dataset.userVote || "0");
-
-    // // Nếu muốn bỏ vote
-    // if (voteType === 0 && voteId) {
-    //   await api.deleteVote(voteId);
-
-    //   // Cập nhật DOM nếu cần
-    //   commentItem.dataset.userVote = "0";
-    //   commentItem.dataset.voteId = "";
-
-    //   return {
-    //     voteCount: parseInt(commentItem.dataset.voteCount || "0") - currentUserVote,
-    //     userVote: 0
-    //   };
-    // }
-
-    // // Nếu đang đổi vote thì cần xóa trước
-    // if (voteId && currentUserVote !== 0 && currentUserVote !== voteType) {
-    //   await api.deleteVote(voteId);
-    // }
-
     // Tạo vote mới
     const voteData = {
       targetId: commentId,
@@ -105,18 +82,13 @@ export async function voteComment(commentId, voteType) {
 
     const data = await api.createVote(voteData);
 
-    // Cập nhật lại DOM để lưu vote mới
-    commentItem.dataset.userVote = data.userVote;
-    commentItem.dataset.voteId = data.voteId;
-    // commentItem.dataset.voteCount = data.voteCount;
-
     // Gửi thông báo cho chủ bài viết (không gửi cho chủ comment)
-    let postIdForNotification = postId;
-    if (!postIdForNotification && comment && comment.postId) {
-      postIdForNotification = comment.postId;
-    }
-    if (postIdForNotification) {
-      const postRes = await api.getPost(postIdForNotification);
+    // Lấy postId từ URL hiện tại
+    const urlParams = new URLSearchParams(window.location.search);
+    const postId = urlParams.get('id');
+    
+    if (postId) {
+      const postRes = await api.getPost(postId);
       const post = postRes.data;
       if (post && post.user && post.user._id !== currentUser._id) {
         const userToken = localStorage.getItem('token');
@@ -136,7 +108,12 @@ export async function voteComment(commentId, voteType) {
       }
     }
 
-    return data;
+    // Trả về data với format đúng
+    return {
+      voteId: data.data?._id || data._id,
+      userVote: voteType,
+      voteCount: data.data?.voteCount || data.voteCount
+    };
   } catch (error) {
     console.error("Error voting on comment:", error);
     return null;
