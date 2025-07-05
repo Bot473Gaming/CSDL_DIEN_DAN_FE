@@ -726,7 +726,6 @@ post-card
 .notification-list {
   height: calc(100% - 60px);
   overflow-y: auto;
-  padding: 15px;
 }
 
 .notification-item {
@@ -751,6 +750,18 @@ post-card
 .notification-item .notification-time {
   font-size: 12px;
   color: var(--text-light);
+}
+.notification-item .notification-actions {
+  text-align: end;
+}
+.notification-item .delete-notification {
+  font-size: 13px;
+  font-weight: 300;
+  border: none;
+  background-color:transparent;
+}
+.notification-item .delete-notification:hover {
+  color:#c82333;
 }
 
 /* Modal */

@@ -104,6 +104,11 @@ async function loadPostDetail() {
     if (postLoading) postLoading.style.display = "none"
     const totalVote=await TotalVotes()
     const idPost=post._id
+    
+    // Check if current user is the author
+    const isAuthor = currentUser._id === post.user?._id
+    const isAdmin = currentUser.role === 'admin'
+    
     // Render post
     if (postContent) {
       postContent.innerHTML = `
@@ -145,6 +150,14 @@ async function loadPostDetail() {
             </button>
           </div>
           <div class="post-buttons">
+            ${(isAuthor || isAdmin) ? `
+              <button class="post-btn edit-post-btn" data-id="${post._id}">
+                <i class="fas fa-edit"></i> Chỉnh sửa
+              </button>
+              <button class="post-btn delete-post-btn" data-id="${post._id}">
+                <i class="fas fa-trash"></i> Xóa
+              </button>
+            ` : ''}
             <button class="post-btn save-post" data-id="${post._id}">
               <i class="${post.isSaved ? "fas" : "far"} fa-bookmark"></i> Lưu
             </button>
@@ -302,6 +315,11 @@ function renderComment(comment,totalComment) {
   const userVote = vote.voteValue || 0;
   const voteId = vote._id || '';
   console.log("mmmm",userVote)
+  
+  // Check if current user is the author of this comment
+  const isCommentAuthor = currentUser._id === comment.user?._id
+  const isAdmin = currentUser.role === 'admin'
+  
   return `
     <div class="comment-item ${comment.parentId ? 'reply' : ''}" 
          data-id="${comment._id}" 
@@ -314,7 +332,7 @@ function renderComment(comment,totalComment) {
           <div class="comment-date">${formatDate(comment.createdAt)}</div>
         </div>
       </div>
-      <div class="comment-content">${comment.content}</div>
+      <div class="comment-content" id="comment-content-${comment._id}">${comment.content}</div>
       <div class="comment-actions">
         <div class="vote-buttons">
           <button class="vote-btn upvote ${comment.userVote === 1 ? 'upvoted' : ''}" data-id="${comment._id}">
@@ -331,11 +349,11 @@ function renderComment(comment,totalComment) {
               <i class="fas fa-reply"></i> Trả lời
             </button>
           ` : ''}
-          ${(currentUser._id === comment.user?._id || currentUser.role === 'admin') ? `
-            <button class="comment-btn edit-btn" data-id="${comment._id}">
+          ${(isCommentAuthor || isAdmin) ? `
+            <button class="comment-btn edit-comment-btn" data-id="${comment._id}">
               <i class="fas fa-edit"></i> Sửa
             </button>
-            <button class="comment-btn delete-btn" data-id="${comment._id}">
+            <button class="comment-btn delete-comment-btn" data-id="${comment._id}">
               <i class="fas fa-trash"></i> Xóa
             </button>
           ` : ''}
@@ -419,6 +437,29 @@ async function submitComment(postId, content, parentCommentId = null) {
       commentCount.textContent = Number(commentCount.textContent || 0) + 1
     }
     setupCommentActions(postId)
+
+    // Gửi thông báo cho chủ bài viết (không gửi cho chủ comment cha)
+    try {
+      const postRes = await api.getPost(postId);
+      const post = postRes.data;
+      if (post && post.user && post.user._id !== currentUser._id) {
+        // Sử dụng token admin để gửi notification
+        const userToken = localStorage.getItem('token');
+        const adminToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0NTM1ZTYyMy0xMzgyLTQwMDEtOTBjNy1mZjRlNjY2YmVlM2MiLCJlbWFpbCI6ImFkbWluQHB0aXQuZWR1LnZuIiwidXNlcm5hbWUiOiJhZG1pbiIsImZ1bGxuYW1lIjoiQWRtaW5pc3RyYXRvciIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc1MTQ4NDY1MiwiZXhwIjoxNzU0MDc2NjUyfQ.mr1pq7Zove0nUnBsAyIOASQshWSpzAbEybVQZDeypxQ';
+        localStorage.setItem('token', adminToken);
+        try {
+          await api.createNotification({
+            userId: post.user._id,
+            type: 'comment_created',
+            content: `${currentUser.fullname} đã bình luận bài viết của bạn.`
+          });
+        } finally {
+          localStorage.setItem('token', userToken);
+        }
+      }
+    } catch (notifyErr) {
+      console.error('Lỗi gửi thông báo comment:', notifyErr);
+    }
   } catch (error) {
     console.error("Error submitting comment:", error)
     const commentError = document.getElementById("comment-error")
@@ -635,6 +676,141 @@ async function setupPostDetailActions(post) {
       showReportModal("post", post._id)
     })
   }
+
+  // Edit post button
+  const editPostBtn = document.querySelector(".edit-post-btn")
+  if (editPostBtn) {
+    editPostBtn.addEventListener("click", () => {
+      if (!token) {
+        showLoginModal()
+        return
+      }
+
+      showEditPostModal(post)
+    })
+  }
+
+  // Delete post button
+  const deletePostBtn = document.querySelector(".delete-post-btn")
+  if (deletePostBtn) {
+    deletePostBtn.addEventListener("click", async () => {
+      if (!token) {
+        showLoginModal()
+        return
+      }
+
+      if (confirm("Bạn có chắc chắn muốn xóa bài viết này? Hành động này không thể hoàn tác.")) {
+        // Check if post has comments
+        const commentCount = post.comments?.length || 0
+        if (commentCount > 0) {
+          const shouldDeleteComments = confirm(`Bài viết này có ${commentCount} bình luận. Bạn có muốn xóa tất cả bình luận và bài viết không?`)
+          if (!shouldDeleteComments) {
+            return
+          }
+        }
+        
+        try {
+          console.log("Attempting to delete post:", post._id)
+          console.log("Current user:", currentUser)
+          console.log("Token exists:", !!token)
+          
+          // Try to delete post first
+          let response = await api.deletePost(post._id)
+          console.log("Delete post response:", response)
+          
+          // If post deletion failed and has comments, try deleting comments first
+          if (!response.success && commentCount > 0) {
+            console.log("Post deletion failed, trying to delete comments first...")
+            
+            // Get all comments for this post
+            const commentsResponse = await api.getComments({ postId: post._id })
+            console.log("Comments response:", commentsResponse)
+            
+            // Handle different response formats
+            let comments = []
+            if (commentsResponse.data && Array.isArray(commentsResponse.data)) {
+              comments = commentsResponse.data
+            } else if (commentsResponse.data && Array.isArray(commentsResponse.data.comments)) {
+              comments = commentsResponse.data.comments
+            } else if (Array.isArray(commentsResponse)) {
+              comments = commentsResponse
+            } else if (commentsResponse.comments && Array.isArray(commentsResponse.comments)) {
+              comments = commentsResponse.comments
+            }
+            
+            // Fallback: use comments from post object if API call failed
+            if (comments.length === 0 && post.comments && Array.isArray(post.comments)) {
+              comments = post.comments
+              console.log("Using comments from post object:", comments)
+            }
+            
+            console.log("Comments to delete:", comments)
+            
+            // Delete all comments
+            for (const comment of comments) {
+              try {
+                await api.deleteComment(comment._id)
+                console.log(`Deleted comment: ${comment._id}`)
+              } catch (commentError) {
+                console.error(`Failed to delete comment ${comment._id}:`, commentError)
+                // Continue with other comments even if one fails
+              }
+            }
+            
+            console.log("All comments deleted, now trying to delete post again...")
+            response = await api.deletePost(post._id)
+            console.log("Second delete post response:", response)
+          }
+          
+          // Check different response formats
+          if (response.success || response.status === 200 || response.statusCode === 200) {
+            if (commentCount > 0) {
+              alert(`Đã xóa ${commentCount} bình luận và bài viết thành công`)
+            } else {
+              alert("Đã xóa bài viết thành công")
+            }
+            window.location.reload();
+            setTimeout(() => {
+              window.location.href = "index.html";
+            }, 500);
+          } else {
+            console.error("Delete failed - response:", response)
+            throw new Error(response.message || response.error || "Xóa thất bại")
+          }
+        } catch (error) {
+          console.error("Error deleting post:", error)
+          console.error("Error details:", {
+            message: error.message,
+            stack: error.stack,
+            response: error.response,
+            status: error.status,
+            statusText: error.statusText
+          })
+          
+          // Provide more specific error messages
+          let errorMessage = "Đã xảy ra lỗi khi xóa bài viết"
+          if (error.status === 500) {
+            errorMessage = "Lỗi server (500) - Có thể bài viết này có bình luận nên không thể xóa. Vui lòng xóa tất cả bình luận trước khi xóa bài viết."
+          } else if (error.status === 403) {
+            errorMessage = "Bạn không có quyền xóa bài viết này"
+          } else if (error.status === 404 || error.message === "Post not found") {
+            errorMessage = "Không tìm thấy bài viết để xóa. Chuyển về trang chủ."
+            window.location.reload();
+            setTimeout(() => {
+              window.location.href = "index.html";
+            }, 500);
+            return;
+          } else if (error.status === 409) {
+            errorMessage = "Không thể xóa bài viết vì có bình luận. Vui lòng xóa tất cả bình luận trước."
+          } else if (error.message) {
+            errorMessage = `Lỗi: ${error.message}`
+          }
+          
+          alert(errorMessage)
+        }
+      }
+    })
+  }
 }
 
 // Setup comment actions
@@ -811,6 +987,53 @@ function setupCommentActions(postId) {
       showReportModal("comment", commentId)
     })
   })
+
+  // Edit comment buttons
+  const editCommentButtons = document.querySelectorAll(".edit-comment-btn")
+  editCommentButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!token) {
+        showLoginModal()
+        return
+      }
+
+      const commentId = button.dataset.id
+      const commentItem = button.closest(".comment-item")
+      const commentContent = commentItem.querySelector(`#comment-content-${commentId}`)
+      const currentContent = commentContent.textContent
+
+      showEditCommentModal(commentId, currentContent, postId)
+    })
+  })
+
+  // Delete comment buttons
+  const deleteCommentButtons = document.querySelectorAll(".delete-comment-btn")
+  deleteCommentButtons.forEach((button) => {
+    button.addEventListener("click", async () => {
+      if (!token) {
+        showLoginModal()
+        return
+      }
+
+      const commentId = button.dataset.id
+      
+      if (confirm("Bạn có chắc chắn muốn xóa bình luận này?")) {
+        try {
+          const response = await api.deleteComment(commentId)
+          if (response.success) {
+            alert("Đã xóa bình luận thành công")
+            // Reload the page to update the list
+            window.location.reload()
+          } else {
+            throw new Error(response.message || "Xóa thất bại")
+          }
+        } catch (error) {
+          console.error("Error deleting comment:", error)
+          alert("Đã xảy ra lỗi khi xóa bình luận. Vui lòng thử lại sau.")
+        }
+      }
+    })
+  })
 }
 
 // Show report modal
@@ -850,47 +1073,257 @@ function showReportModal(type, id) {
 
   document.body.appendChild(modal)
 
-  // Setup close button
+  // Close modal
   const closeBtn = modal.querySelector(".close-modal")
-  closeBtn.addEventListener("click", () => {
-    modal.remove()
-  })
-
-  // Setup cancel button
   const cancelBtn = modal.querySelector(".cancel-report")
-  cancelBtn.addEventListener("click", () => {
+  const closeModal = () => {
     modal.remove()
+  }
+
+  closeBtn.addEventListener("click", closeModal)
+  cancelBtn.addEventListener("click", closeModal)
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeModal()
   })
 
-  // Setup form submission
+  // Handle form submission
   const form = modal.querySelector("#report-form")
   form.addEventListener("submit", async (e) => {
     e.preventDefault()
 
-    const reason = form.querySelector("select[name='reason']").value
-    const description = form.querySelector("textarea[name='description']").value.trim()
+    const formData = new FormData(form)
+    const reason = formData.get("reason")
+    const description = formData.get("description")
 
     try {
-      const response = await fetch(`${API_URL}/${type}s/${id}/report`, {
+      const response = await fetch(`${API_URL}/reports`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ reason, description }),
+        body: JSON.stringify({
+          targetType: type,
+          targetId: id,
+          reason,
+          description,
+        }),
       })
 
       if (!response.ok) {
         throw new Error("Failed to submit report")
       }
 
-      alert("Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét vấn đề này.")
-      modal.remove()
+      alert("Báo cáo đã được gửi thành công")
+      closeModal()
     } catch (error) {
       console.error("Error submitting report:", error)
       alert("Đã xảy ra lỗi khi gửi báo cáo. Vui lòng thử lại sau.")
     }
   })
+}
+
+// Show edit post modal
+function showEditPostModal(post) {
+  const modal = document.createElement("div")
+  modal.className = "modal"
+  modal.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Chỉnh sửa bài viết</h3>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="edit-post-form">
+          <div class="form-group">
+            <label>Tiêu đề</label>
+            <input type="text" name="title" value="${post.title}" required>
+          </div>
+          <div class="form-group">
+            <label>Nội dung</label>
+            <textarea name="content" rows="10" required>${post.content}</textarea>
+          </div>
+          <div class="form-group">
+            <label>Danh mục</label>
+            <select name="categoryId" required>
+              <option value="">Chọn danh mục</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Tags (phân cách bằng dấu phẩy)</label>
+            <input type="text" name="tags" value="${(post.tags || []).map(tag => tag.name).join(', ')}" placeholder="Ví dụ: JavaScript, React, Tutorial">
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-outline cancel-edit">Hủy</button>
+            <button type="submit" class="btn btn-primary">Cập nhật</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `
+
+  document.body.appendChild(modal)
+
+  // Load categories
+  loadCategoriesForEdit(modal, post.category?._id)
+
+  // Close modal
+  const closeBtn = modal.querySelector(".close-modal")
+  const cancelBtn = modal.querySelector(".cancel-edit")
+  const closeModal = () => {
+    modal.remove()
+  }
+
+  closeBtn.addEventListener("click", closeModal)
+  cancelBtn.addEventListener("click", closeModal)
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeModal()
+  })
+
+  // Handle form submission
+  const form = modal.querySelector("#edit-post-form")
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault()
+    await handleEditPost(form, post._id, closeModal)
+  })
+}
+
+// Load categories for edit form
+async function loadCategoriesForEdit(modal, selectedCategoryId) {
+  try {
+    const categories = await api.getCategories()
+
+    const select = modal.querySelector("select[name='categoryId']")
+    select.innerHTML = `
+      <option value="">Chọn danh mục</option>
+      ${categories.data.categories.map(
+        (category) => `
+        <option value="${category._id}" ${category._id === selectedCategoryId ? 'selected' : ''}>${category.name}</option>
+      `,
+      ).join("")}
+    `
+  } catch (error) {
+    console.error("Error loading categories:", error)
+  }
+}
+
+// Handle edit post submission
+async function handleEditPost(form, postId, closeModal) {
+  const formData = new FormData(form)
+  const title = formData.get("title").trim()
+  const content = formData.get("content").trim()
+  const categoryId = formData.get("categoryId")
+  const tagsInput = formData.get("tags").trim()
+
+  if (!title || !content || !categoryId) {
+    alert("Vui lòng điền đầy đủ thông tin bắt buộc")
+    return
+  }
+
+  try {
+    // Parse tags
+    const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag) : []
+
+    const postData = {
+      title,
+      content,
+      categoryId,
+      tags
+    }
+
+    const response = await api.updatePost(postId, postData)
+    
+    if (response.success) {
+      alert("Cập nhật bài viết thành công")
+      closeModal()
+      // Reload the page to show updated content
+      window.location.reload()
+    } else {
+      throw new Error(response.message || "Cập nhật thất bại")
+    }
+  } catch (error) {
+    console.error("Error updating post:", error)
+    alert("Đã xảy ra lỗi khi cập nhật bài viết. Vui lòng thử lại sau.")
+  }
+}
+
+// Show edit comment modal
+function showEditCommentModal(commentId, currentContent, postId) {
+  const modal = document.createElement("div")
+  modal.className = "modal"
+  modal.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Chỉnh sửa bình luận</h3>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="edit-comment-form">
+          <div class="form-group">
+            <label>Nội dung bình luận</label>
+            <textarea name="content" rows="5" required>${currentContent}</textarea>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-outline cancel-edit-comment">Hủy</button>
+            <button type="submit" class="btn btn-primary">Cập nhật</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `
+
+  document.body.appendChild(modal)
+
+  // Close modal
+  const closeBtn = modal.querySelector(".close-modal")
+  const cancelBtn = modal.querySelector(".cancel-edit-comment")
+  const closeModal = () => {
+    modal.remove()
+  }
+
+  closeBtn.addEventListener("click", closeModal)
+  cancelBtn.addEventListener("click", closeModal)
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeModal()
+  })
+
+  // Handle form submission
+  const form = modal.querySelector("#edit-comment-form")
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault()
+    await handleEditComment(form, commentId, postId, closeModal)
+  })
+}
+
+// Handle edit comment submission
+async function handleEditComment(form, commentId, postId, closeModal) {
+  const formData = new FormData(form)
+  const content = formData.get("content").trim()
+
+  if (!content) {
+    alert("Vui lòng nhập nội dung bình luận")
+    return
+  }
+
+  try {
+    const commentData = {
+      content
+    }
+
+    const response = await api.updateComment(commentId, commentData)
+    
+    if (response.success) {
+      alert("Cập nhật bình luận thành công")
+      closeModal()
+      // Reload the page to show updated comment
+      window.location.reload()
+    } else {
+      throw new Error(response.message || "Cập nhật thất bại")
+    }
+  } catch (error) {
+    console.error("Error updating comment:", error)
+    alert("Đã xảy ra lỗi khi cập nhật bình luận. Vui lòng thử lại sau.")
+  }
 }
 
 // Setup create post form
@@ -930,11 +1363,16 @@ async function setupCreatePostForm() {
       }
 
       try {
-        await api.createPost(postData, token)
-        window.location.href = "index.html"
+        const response = await api.createPost(postData)
+        if (response.success) {
+          alert("Tạo bài viết thành công")
+          window.location.href = "index.html"
+        } else {
+          throw new Error(response.message || "Tạo bài viết thất bại")
+        }
       } catch (error) {
         console.error("Error creating post:", error)
-        alert("Đã xảy ra lỗi khi tạo bài viết. Vui lòng thử lại sau.")
+        alert(`Đã xảy ra lỗi khi tạo bài viết: ${error.message}`)
       }
     })
   } catch (error) {

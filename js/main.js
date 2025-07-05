@@ -2,6 +2,9 @@
 let token = localStorage.getItem("token")
 let currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}")
 
+import { setupNotificationPanel } from './notifications.js';
+// import { updateNotificationCount } from './notifications.js';
+
 // DOM Elements
 const userActionsContainer = document.getElementById("user-actions")
 const modalContainer = document.getElementById("modal-container")
@@ -132,7 +135,7 @@ function updateUI() {
                     </ul>
                 </div>
             `
-
+      setupNotificationPanel()
       // Setup logout button
       const logoutBtn = document.getElementById("logout-btn")
       if (logoutBtn) {
@@ -567,9 +570,6 @@ async function loadNotifications() {
         .map(
           (notification) => `
             <div class="notification-item ${notification.read ? "" : "unread"}" data-id="${notification._id}">
-              <div class="notification-icon">
-                ${getNotificationIcon(notification.type)}
-              </div>
               <div class="notification-content">
                 <div class="notification-text">${notification.content}</div>
                 <div class="notification-date">${formatDate(notification.createdAt)}</div>
@@ -618,6 +618,33 @@ async function loadNotifications() {
   }
 }
 
+// Update notification count
+export async function updateNotificationCount() {
+  const notificationCount = document.getElementById("notification-count")
+  if (!notificationCount || !token) return
+
+  try {
+    let unreadCount = 0;
+    const response = await api.getNotifications({ isRead: false }, token);
+    if (response.success) {
+      const notifications = response.data.notifications || response.data || [];
+      const filtered = notifications.filter(noti => noti.userId === currentUser._id);
+      unreadCount = filtered.length;
+    }
+
+    if (unreadCount > 0) {
+      notificationCount.textContent = unreadCount;
+      notificationCount.style.display = "block";
+    } else {
+      notificationCount.style.display = "none";
+    }
+  } catch (error) {
+    console.error("Error updating notification count:", error);
+    notificationCount.style.display = "none";
+  }
+}
+
+
 // Get notification icon based on type
 function getNotificationIcon(type) {
   switch (type) {
@@ -636,39 +663,6 @@ function getNotificationIcon(type) {
   }
 }
 
-// Update notification count
-async function updateNotificationCount() {
-  const notificationCount = document.getElementById("notification-count")
-  if (!notificationCount || !token) return
-
-  try {
-    // Try to get unread count directly if the endpoint is available
-    let unreadCount = 0;
-    try {
-      const response = await api.getUnreadNotificationCount(token);
-      if (response.success) {
-        unreadCount = response.data.count || 0;
-      }
-    } catch (e) {
-      // If unread count endpoint fails, fallback to counting from notifications
-      const response = await api.getNotifications({ isRead: false }, token);
-      if (response.success) {
-        const notifications = response.data.notifications || response.data || [];
-        unreadCount = notifications.length;
-      }
-    }
-
-    if (unreadCount > 0) {
-      notificationCount.textContent = unreadCount;
-      notificationCount.style.display = "block";
-    } else {
-      notificationCount.style.display = "none";
-    }
-  } catch (error) {
-    console.error("Error updating notification count:", error);
-    notificationCount.style.display = "none";
-  }
-}
 
 // Tạo các hàm toàn cục để gọi từ HTML
 window.loadPosts = loadPosts

@@ -733,6 +733,7 @@ const api = {
     if (!token) {
       throw new Error('No authentication token found');
     }
+    console.log("Token used:", token);
     return await apiCall('/notifications/read/all', {
       method: 'PATCH',
       headers: { 
