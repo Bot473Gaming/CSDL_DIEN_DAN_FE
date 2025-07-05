@@ -229,8 +229,8 @@ async function apiCall(endpoint, options = {}, retryCount = 0) {
     return response;
   } catch (error) {
     console.error(`Error fetching ${endpoint}:`, error);
-    
-    if (retryCount < MAX_RETRIES) {
+    const status = error.status || error?.responseJSON?.status || 'unknown';
+    if (retryCount < MAX_RETRIES && status !== 401) {
       console.log(`Retrying ${endpoint} (${retryCount + 1}/${MAX_RETRIES})...`);
       await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (retryCount + 1)));
       return apiCall(endpoint, options, retryCount + 1);
