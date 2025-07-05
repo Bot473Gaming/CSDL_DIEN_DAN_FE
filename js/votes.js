@@ -139,7 +139,6 @@ export async function voteComment(commentId, voteType) {
     return data;
   } catch (error) {
     console.error("Error voting on comment:", error);
-    alert(`Đã xảy ra lỗi khi bình chọn: ${error.message}. Vui lòng thử lại sau.`);
     return null;
   }
 }
