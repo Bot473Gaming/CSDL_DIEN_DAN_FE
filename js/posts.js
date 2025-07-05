@@ -408,11 +408,10 @@ async function TotalVotesForComments() {
 }
 // Render a single comment
 function renderComment(comment,totalComment) {
-  // console.log("mmmm",comment)
   const vote = comment.votes?.[0] || {};
   const userVote = vote.voteValue || 0;
   const voteId = vote._id || '';
-  console.log("mmmm",userVote)
+  console.log("mmmmnnvvvvbb",totalComment)
   
   // Handle both user and author fields from API
   const commentAuthor = comment.user || comment.author;
