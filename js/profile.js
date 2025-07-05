@@ -55,6 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Load profile data
   loadProfileData(userId, isCurrentUser)
+  console.log("Profile.js: DOM fully loaded")
 
   // Setup tabs
   setupProfileTabs()
@@ -66,16 +67,19 @@ async function loadProfileData(userId, isCurrentUser) {
     // If it's the current user and no userId provided, use the current user's ID
     const targetUserId = isCurrentUser && !userId ? currentUser._id : userId
 
-    const response = await fetch(`${API_URL}/users/${targetUserId}`, {
+    const [responseUser, responseProfile] = await Promise.all([fetch(`${API_URL}/users/${targetUserId}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
-    })
+    }), fetch(`${API_URL}/users/${targetUserId}/profile`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })])
 
-    if (!response.ok) {
+    if (!responseUser.ok) {
       throw new Error("Failed to fetch user profile")
     }
 
-    const user = await response.json()
-
+    const [{ data: user}, { data: profile }] = await Promise.all([responseUser.json(), responseProfile.json()])
+    
+    console.log("USER PROFILE", user)
     // Update profile data
     if (profileName) profileName.textContent = user.fullname
     if (profileRole)
@@ -85,15 +89,14 @@ async function loadProfileData(userId, isCurrentUser) {
     if (profileAvatar) {
       profileAvatar.innerHTML = `<img src="${user.avatar || "assets/images/default-avatar.png"}" alt="${user.fullname}">`
     }
-
+    
     if (profileCover) {
-      if (user.cover) {
-        profileCover.style.backgroundImage = `url(${user.cover})`
+      if (profile.cover) {
+        profileCover.style.backgroundImage = `url(${profile.cover})`
       }
     }
 
-    if (postsCount) postsCount.textContent = user.postsCount || 0
-    if (commentsCount) commentsCount.textContent = user.commentsCount || 0
+    
     if (reputationPoints) reputationPoints.textContent = user.reputation || 0
 
     if (profileBadges) {
@@ -214,7 +217,7 @@ async function loadProfileData(userId, isCurrentUser) {
 
       userAbout.innerHTML = `
         <div class="about-content">
-          <p>${user.bio || "Người dùng chưa cập nhật thông tin giới thiệu."}</p>
+          <p>${profile.bio || "Người dùng chưa cập nhật thông tin giới thiệu."}</p>
           <p>Tham gia: ${formatDate(user.createdAt)}</p>
         </div>
       `
@@ -330,14 +333,17 @@ async function loadUserPosts(userId) {
   const userPostsLoading = document.getElementById("user-posts-loading")
 
   try {
-    const response = await fetch(`${API_URL}/users/${userId}/posts`)
+    const response = await fetch(`${API_URL}/post?userId=${userId}`)
 
     if (!response.ok) {
       throw new Error("Failed to fetch user posts")
     }
 
-    const posts = await response.json()
+    const { data } = await response.json()
+    const posts = data.posts
 
+    if (postsCount) postsCount.textContent = posts.length || 0
+    
     if (userPostsLoading) {
       userPostsLoading.style.display = "none"
     }
@@ -392,13 +398,16 @@ async function loadUserComments(userId) {
   const userCommentsLoading = document.getElementById("user-comments-loading")
 
   try {
-    const response = await fetch(`${API_URL}/users/${userId}/comments`)
+    const response = await fetch(`${API_URL}/comment?userId=${userId}`)
 
     if (!response.ok) {
       throw new Error("Failed to fetch user comments")
     }
 
-    const comments = await response.json()
+    const {data} = await response.json()
+    const comments = data.comments
+
+    if (commentsCount) commentsCount.textContent = comments.length || 0
 
     if (userCommentsLoading) {
       userCommentsLoading.style.display = "none"
