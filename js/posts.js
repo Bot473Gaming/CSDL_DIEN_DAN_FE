@@ -365,7 +365,7 @@ function renderComment(comment,totalComment) {
       ${comment.isEdited ? '<div class="comment-edited">(Đã chỉnh sửa)</div>' : ''}
       <div class="reply-form-container" id="reply-form-${comment._id}"></div>
       <div class="replies-container" id="replies-${comment._id}">
-        ${(comment.replies || []).map(reply => renderComment(reply)).join('')}
+        ${(comment.replies || []).map(reply => renderComment(reply,totalComment)).join('')}
       </div>
     </div>
   `
