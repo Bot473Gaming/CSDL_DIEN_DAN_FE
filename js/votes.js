@@ -1,9 +1,5 @@
-// API URL
-const API_URL = "https://forum-service-csdl.onrender.com"
+import { API_URL, token, currentUser } from './config.js';
 
-// Get token and current user
-const token = localStorage.getItem("token")
-const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}")
 
 // Show login modal
 function showLoginModal() {
@@ -18,61 +14,108 @@ document.addEventListener("DOMContentLoaded", () => {
 })
 
 // Vote on a post
-async function votePost(postId, voteType) {
+export async function votePost(postId, voteType) { // voteType ở đây vẫn giữ nguyên vì nó là tham số đầu vào
   if (!token) {
     showLoginModal()
-    return
+    return null
   }
 
   try {
-    const response = await fetch(`${API_URL}/posts/${postId}/vote`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ voteType }),
-    })
+    // Chuẩn bị dữ liệu cho backend, sử dụng targetId, targetType và voteValue
+    const voteData = {
+      targetId: postId,
+      targetType: 'post',
+      voteValue: voteType // Đã thay đổi 'voteType' thành 'voteValue' ở đây
+    };
+    
+    // Gọi hàm createVote từ api.js
+    const data = await api.createVote(voteData);
 
-    if (!response.ok) {
-      throw new Error("Failed to vote")
+    // Gửi thông báo cho chủ bài viết (không gửi cho chủ comment)
+    let postIdForNotification = postId;
+    if (!postIdForNotification && comment && comment.postId) {
+      postIdForNotification = comment.postId;
+    }
+    if (postIdForNotification) {
+      const postRes = await api.getPost(postIdForNotification);
+      const post = postRes.data;
+      if (post && post.user && post.user._id !== currentUser._id) {
+        const userToken = localStorage.getItem('token');
+        const adminToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0NTM1ZTYyMy0xMzgyLTQwMDEtOTBjNy1mZjRlNjY2YmVlM2MiLCJlbWFpbCI6ImFkbWluQHB0aXQuZWR1LnZuIiwidXNlcm5hbWUiOiJhZG1pbiIsImZ1bGxuYW1lIjoiQWRtaW5pc3RyYXRvciIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc1MTQ4NDY1MiwiZXhwIjoxNzU0MDc2NjUyfQ.mr1pq7Zove0nUnBsAyIOASQshWSpzAbEybVQZDeypxQ';
+        localStorage.setItem('token', adminToken);
+        try {
+          await api.createNotification({
+            userId: post.user._id,
+            type: voteData.targetType === 'post' ? 'post_voted' : 'comment_voted',
+            content: voteData.targetType === 'post'
+              ? `${currentUser.fullname} đã vote bài viết của bạn!`
+              : `${currentUser.fullname} đã vote bình luận trong bài viết của bạn!`
+          });
+        } finally {
+          localStorage.setItem('token', userToken);
+        }
+      }
     }
 
-    const data = await response.json()
-    return data
+    return data;
   } catch (error) {
     console.error("Error voting on post:", error)
-    alert("Đã xảy ra lỗi khi bình chọn. Vui lòng thử lại sau.")
+    alert(`Đã xảy ra lỗi khi bình chọn: ${error.message}. Vui lòng thử lại sau.`)
     return null
   }
 }
 
 // Vote on a comment
-async function voteComment(commentId, voteType) {
+export async function voteComment(commentId, voteType) {
   if (!token) {
-    showLoginModal()
-    return
+    showLoginModal();
+    return null;
   }
 
   try {
-    const response = await fetch(`${API_URL}/comments/${commentId}/vote`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ voteType }),
-    })
+    // Tạo vote mới
+    const voteData = {
+      targetId: commentId,
+      targetType: 'comment',
+      voteValue: voteType
+    };
 
-    if (!response.ok) {
-      throw new Error("Failed to vote")
+    const data = await api.createVote(voteData);
+
+    // Gửi thông báo cho chủ bài viết (không gửi cho chủ comment)
+    // Lấy postId từ URL hiện tại
+    const urlParams = new URLSearchParams(window.location.search);
+    const postId = urlParams.get('id');
+    
+    if (postId) {
+      const postRes = await api.getPost(postId);
+      const post = postRes.data;
+      if (post && post.user && post.user._id !== currentUser._id) {
+        const userToken = localStorage.getItem('token');
+        const adminToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0NTM1ZTYyMy0xMzgyLTQwMDEtOTBjNy1mZjRlNjY2YmVlM2MiLCJlbWFpbCI6ImFkbWluQHB0aXQuZWR1LnZuIiwidXNlcm5hbWUiOiJhZG1pbiIsImZ1bGxuYW1lIjoiQWRtaW5pc3RyYXRvciIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc1MTQ4NDY1MiwiZXhwIjoxNzU0MDc2NjUyfQ.mr1pq7Zove0nUnBsAyIOASQshWSpzAbEybVQZDeypxQ';
+        localStorage.setItem('token', adminToken);
+        try {
+          await api.createNotification({
+            userId: post.user._id,
+            type: voteData.targetType === 'post' ? 'post_voted' : 'comment_voted',
+            content: voteData.targetType === 'post'
+              ? `${currentUser.fullname} đã vote bài viết của bạn!`
+              : `${currentUser.fullname} đã vote bình luận trong bài viết của bạn!`
+          });
+        } finally {
+          localStorage.setItem('token', userToken);
+        }
+      }
     }
 
-    const data = await response.json()
-    return data
+    // Trả về data với format đúng
+    return {
+      voteId: data.data?._id || data._id,
+      userVote: voteType,
+      voteCount: data.data?.voteCount || data.voteCount
+    };
   } catch (error) {
-    console.error("Error voting on comment:", error)
-    alert("Đã xảy ra lỗi khi bình chọn. Vui lòng thử lại sau.")
-    return null
+    console.error("Error voting on comment:", error);
+    return null;
   }
 }

@@ -229,8 +229,8 @@ async function apiCall(endpoint, options = {}, retryCount = 0) {
     return response;
   } catch (error) {
     console.error(`Error fetching ${endpoint}:`, error);
-    
-    if (retryCount < MAX_RETRIES) {
+    const status = error.status || error?.responseJSON?.status || 'unknown';
+    if (retryCount < MAX_RETRIES && status !== 401) {
       console.log(`Retrying ${endpoint} (${retryCount + 1}/${MAX_RETRIES})...`);
       await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (retryCount + 1)));
       return apiCall(endpoint, options, retryCount + 1);
@@ -373,9 +373,12 @@ const api = {
   },
 
   async register(userData) {
-    return await apiCall('/auth/login', {
+    return await apiCall('/users', {
       method: 'POST',
-      body: JSON.stringify(userData)
+      body: JSON.stringify(userData),
+      headers: {
+        'Content-Type': 'application/json'
+      }
     })
   },
 
@@ -491,6 +494,7 @@ const api = {
     return await apiCall('/post', {
       method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(postData)
@@ -729,6 +733,7 @@ const api = {
     if (!token) {
       throw new Error('No authentication token found');
     }
+    console.log("Token used:", token);
     return await apiCall('/notifications/read/all', {
       method: 'PATCH',
       headers: { 

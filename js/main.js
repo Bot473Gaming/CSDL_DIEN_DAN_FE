@@ -2,6 +2,9 @@
 let token = localStorage.getItem("token")
 let currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}")
 
+import { setupNotificationPanel } from './notifications.js';
+// import { updateNotificationCount } from './notifications.js';
+
 // DOM Elements
 const userActionsContainer = document.getElementById("user-actions")
 const modalContainer = document.getElementById("modal-container")
@@ -27,6 +30,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Load initial data
   initializeHomePage()
+
+  setupSearchForm()
+
+  // Thêm sự kiện cho dropdown sắp xếp bài viết
+  const sortSelect = document.getElementById("sort-posts")
+  if (sortSelect) {
+    // Đặt giá trị mặc định theo URL khi load lại trang
+    const urlParams = new URLSearchParams(window.location.search)
+    const sortValue = urlParams.get("sort") || "newest"
+    sortSelect.value = sortValue
+    sortSelect.addEventListener("change", function () {
+      urlParams.set("sort", this.value)
+      urlParams.set("page", 1) // Reset về trang 1 khi đổi sort
+      window.location.search = urlParams.toString()
+    })
+  }
 })
 
 // Initialize homepage data
@@ -67,6 +86,10 @@ function logout() {
   token = null
   currentUser = null
   updateUI()
+  
+  // Trigger custom event for user change
+  window.dispatchEvent(new CustomEvent('userChanged'));
+  
   window.location.href = "index.html"
 }
 
@@ -100,6 +123,9 @@ async function fetchCurrentUser() {
       currentUser = response.data
       localStorage.setItem("currentUser", JSON.stringify(currentUser))
       updateUI()
+      
+      // Trigger custom event for user change
+      window.dispatchEvent(new CustomEvent('userChanged'));
     } else {
       // If response is not successful, logout
       console.error("Failed to fetch user:", response.message)
@@ -108,9 +134,7 @@ async function fetchCurrentUser() {
   } catch (error) {
     console.error("Error fetching current user:", error)
     // If token is invalid, logout
-    if (error.message.includes("401") || error.message.includes("Unauthorized")) {
-      logout()
-    }
+    logout()
   }
 }
 
@@ -134,7 +158,7 @@ function updateUI() {
                     </ul>
                 </div>
             `
-
+      setupNotificationPanel()
       // Setup logout button
       const logoutBtn = document.getElementById("logout-btn")
       if (logoutBtn) {
@@ -266,6 +290,29 @@ async function loadTopUsers() {
   }
 }
 
+function cleanParams(params) {
+  return Object.fromEntries(
+    Object.entries(params).filter(([_, v]) => v !== null && v !== undefined && v !== '')
+  );
+}
+
+// Calculate total votes for a post
+function calculateTotalVotes(post) {
+  // Nếu có voteCount từ API, sử dụng nó
+  if (post.voteCount !== undefined) {
+    return post.voteCount;
+  }
+  
+  // Nếu không có voteCount, tính tổng từ votes array
+  if (!post.votes || !Array.isArray(post.votes)) {
+    return 0;
+  }
+  
+  return post.votes.reduce((total, vote) => {
+    return total + (vote.voteValue || 0);
+  }, 0);
+}
+
 // Load posts
 async function loadPosts() {
   try {
@@ -287,7 +334,7 @@ async function loadPosts() {
     if (postsContainer) postsContainer.innerHTML = ""
 
     // Fetch posts
-    const response = await api.getPosts({
+    const params = cleanParams({
       categoryId,
       tagIds,
       userId,
@@ -295,11 +342,23 @@ async function loadPosts() {
       sort,
       skip,
       take: limit
-    })
+    });
+
+    const response = await api.getPosts(params);
 
     // Extract posts and total from response data
-    const posts = response.data.posts
+    let posts = response.data.posts
     const total = response.data.total
+
+    // Sắp xếp posts phía frontend theo tiêu chí sort
+    if (sort === 'most-commented') {
+      posts = posts.slice().sort((a, b) => (b.comments?.length || 0) - (a.comments?.length || 0))
+    } else if (sort === 'popular') {
+      posts = posts.slice().sort((a, b) => ((b.votes?.length || 0) + (b.comments?.length || 0)) - ((a.votes?.length || 0) + (a.comments?.length || 0)))
+    } else {
+      // newest (default)
+      posts = posts.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    }
 
     // Hide loading
     if (postsLoading) postsLoading.style.display = "none"
@@ -333,17 +392,19 @@ async function loadPosts() {
                     <a href="index.html?category=${post.category?._id}">${post.category?.name}</a>
                   </div>
                 </div>
+                <a href="post.html?id=${post._id}">
                 <div class="post-content">
                   <h2 class="post-title">
-                    <a href="post.html?id=${post._id}">${post.title}</a>
+                    ${post.title}
                   </h2>
-                  <p class="post-excerpt">${post.content.substring(0, 200)}...</p>
+                  <p class="post-excerpt">${post.content}</p>
                 </div>
+                </a>
                 <div class="post-footer">
                   <div class="post-meta">
                     <span><i class="fas fa-eye"></i> ${post.viewCount || 0}</span>
                     <span><i class="fas fa-comment"></i> ${post.comments?.length || 0}</span>
-                    <span><i class="fas fa-thumbs-up"></i> ${post.votes?.length || 0}</span>
+                    <span><i class="fas fa-thumbs-up"></i> ${calculateTotalVotes(post)}</span>
                   </div>
                   <div class="post-tags">
                     ${(post.tags || []).map(tag => 
@@ -499,6 +560,12 @@ function setupSearchForm() {
   const searchForm = document.getElementById("search-form")
   if (!searchForm) return
 
+  // Đặt giá trị cho input tìm kiếm khi trang load
+  const urlParams = new URLSearchParams(window.location.search);
+  const searchValue = urlParams.get('search') || '';
+  const searchInput = searchForm.querySelector("input[name='search']");
+  if (searchInput) searchInput.value = searchValue;
+
   searchForm.addEventListener("submit", (e) => {
     e.preventDefault()
     const searchInput = searchForm.querySelector("input[name='search']")
@@ -560,9 +627,6 @@ async function loadNotifications() {
         .map(
           (notification) => `
             <div class="notification-item ${notification.read ? "" : "unread"}" data-id="${notification._id}">
-              <div class="notification-icon">
-                ${getNotificationIcon(notification.type)}
-              </div>
               <div class="notification-content">
                 <div class="notification-text">${notification.content}</div>
                 <div class="notification-date">${formatDate(notification.createdAt)}</div>
@@ -611,6 +675,33 @@ async function loadNotifications() {
   }
 }
 
+// Update notification count
+export async function updateNotificationCount() {
+  const notificationCount = document.getElementById("notification-count")
+  if (!notificationCount || !token) return
+
+  try {
+    let unreadCount = 0;
+    const response = await api.getNotifications({ isRead: false }, token);
+    if (response.success) {
+      const notifications = response.data.notifications || response.data || [];
+      const filtered = notifications.filter(noti => noti.userId === currentUser._id);
+      unreadCount = filtered.length;
+    }
+
+    if (unreadCount > 0) {
+      notificationCount.textContent = unreadCount;
+      notificationCount.style.display = "block";
+    } else {
+      notificationCount.style.display = "none";
+    }
+  } catch (error) {
+    console.error("Error updating notification count:", error);
+    notificationCount.style.display = "none";
+  }
+}
+
+
 // Get notification icon based on type
 function getNotificationIcon(type) {
   switch (type) {
@@ -629,39 +720,6 @@ function getNotificationIcon(type) {
   }
 }
 
-// Update notification count
-async function updateNotificationCount() {
-  const notificationCount = document.getElementById("notification-count")
-  if (!notificationCount || !token) return
-
-  try {
-    // Try to get unread count directly if the endpoint is available
-    let unreadCount = 0;
-    try {
-      const response = await api.getUnreadNotificationCount(token);
-      if (response.success) {
-        unreadCount = response.data.count || 0;
-      }
-    } catch (e) {
-      // If unread count endpoint fails, fallback to counting from notifications
-      const response = await api.getNotifications({ isRead: false }, token);
-      if (response.success) {
-        const notifications = response.data.notifications || response.data || [];
-        unreadCount = notifications.length;
-      }
-    }
-
-    if (unreadCount > 0) {
-      notificationCount.textContent = unreadCount;
-      notificationCount.style.display = "block";
-    } else {
-      notificationCount.style.display = "none";
-    }
-  } catch (error) {
-    console.error("Error updating notification count:", error);
-    notificationCount.style.display = "none";
-  }
-}
 
 // Tạo các hàm toàn cục để gọi từ HTML
 window.loadPosts = loadPosts
