@@ -32,6 +32,20 @@ document.addEventListener("DOMContentLoaded", () => {
   initializeHomePage()
 
   setupSearchForm()
+
+  // Thêm sự kiện cho dropdown sắp xếp bài viết
+  const sortSelect = document.getElementById("sort-posts")
+  if (sortSelect) {
+    // Đặt giá trị mặc định theo URL khi load lại trang
+    const urlParams = new URLSearchParams(window.location.search)
+    const sortValue = urlParams.get("sort") || "newest"
+    sortSelect.value = sortValue
+    sortSelect.addEventListener("change", function () {
+      urlParams.set("sort", this.value)
+      urlParams.set("page", 1) // Reset về trang 1 khi đổi sort
+      window.location.search = urlParams.toString()
+    })
+  }
 })
 
 // Initialize homepage data
@@ -308,8 +322,18 @@ async function loadPosts() {
     const response = await api.getPosts(params);
 
     // Extract posts and total from response data
-    const posts = response.data.posts
+    let posts = response.data.posts
     const total = response.data.total
+
+    // Sắp xếp posts phía frontend theo tiêu chí sort
+    if (sort === 'most-commented') {
+      posts = posts.slice().sort((a, b) => (b.comments?.length || 0) - (a.comments?.length || 0))
+    } else if (sort === 'popular') {
+      posts = posts.slice().sort((a, b) => ((b.votes?.length || 0) + (b.comments?.length || 0)) - ((a.votes?.length || 0) + (a.comments?.length || 0)))
+    } else {
+      // newest (default)
+      posts = posts.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    }
 
     // Hide loading
     if (postsLoading) postsLoading.style.display = "none"
