@@ -5,6 +5,39 @@
   box-sizing: border-box;
 }
 
+/* Deleted post message styles */
+.deleted-post-message {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+  background-color: #f8f9fa;
+  border-radius: var(--radius);
+  border: 1px solid #e9ecef;
+}
+
+.deleted-post-message i {
+  font-size: 48px;
+  color: #ccc;
+  margin-bottom: 20px;
+  display: block;
+}
+
+.deleted-post-message h3 {
+  color: #333;
+  margin-bottom: 10px;
+  font-size: 24px;
+}
+
+.deleted-post-message p {
+  color: #666;
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+
+.deleted-post-message .btn {
+  margin-top: 20px;
+}
+
 :root {
   --primary-color: #4a6bff;
   --primary-dark: #3a56cc;

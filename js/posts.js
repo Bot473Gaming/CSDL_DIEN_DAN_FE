@@ -725,7 +725,6 @@ async function submitComment(postId, content, parentCommentId = null) {
         }
         
         if (confirm("Bạn có chắc chắn muốn xóa bình luận này?")) {
-          // Ẩn comment ngay lập tức trước khi gọi API
           commentItem.style.display = "none"
           
           // Cập nhật số lượng comment
@@ -1031,7 +1030,32 @@ async function setupPostDetailActions(post) {
             return
           }
         }
-        
+        // Ẩn bài post ngay lập tức trước khi gọi API xóa
+        const postContentElement = document.getElementById("post-content")
+        const commentsSection = document.getElementById("comments-section")
+
+        // Chỉ ẩn bài post nếu không có bình luận
+        if (commentCount === 0) {
+          if (postContentElement) {
+            postContentElement.style.display = "none"
+          }
+          if (commentsSection) {
+            commentsSection.style.display = "none"
+          }
+          // Hiển thị thông báo bài post đã được xóa
+          const mainContainer = document.querySelector(".post-container")
+          if (mainContainer) {
+            mainContainer.innerHTML = `
+              <div class="deleted-post-message">
+                <i class="fas fa-trash"></i>
+                <h3>Bài viết đã được xóa</h3>
+                <a href="index.html" class="btn btn-primary">Quay lại trang chủ</a>
+              </div>
+            `
+          }
+        }else{
+          alert("Bài post không thể xóa")
+        }
         try {
           console.log("Attempting to delete post:", post._id)
           console.log("Current user:", currentUser)
@@ -1092,10 +1116,16 @@ async function setupPostDetailActions(post) {
             } else {
               alert("Đã xóa bài viết thành công")
             }
-            window.location.reload();
-            setTimeout(() => {
-              window.location.href = "index.html";
-            }, 500);
+            
+            // Ẩn bài post với hiệu ứng mượt mà
+            const postContentElement = document.getElementById("post-content")
+            postContentElement.innerHTML = `
+              <div class="deleted-post-message">
+                <i class="fas fa-trash"></i>
+                <h3>Bài viết đã được xóa</h3>
+                <a href="index.html" class="btn btn-primary">Quay lại trang chủ</a>
+              </div>
+            `
           } else {
             console.error("Delete failed - response:", response)
             throw new Error(response.message || response.error || "Xóa thất bại")
@@ -1117,11 +1147,17 @@ async function setupPostDetailActions(post) {
           } else if (error.status === 403) {
             errorMessage = "Bạn không có quyền xóa bài viết này"
           } else if (error.status === 404 || error.message === "Post not found") {
-            errorMessage = "Không tìm thấy bài viết để xóa. Chuyển về trang chủ."
-            window.location.reload();
-            setTimeout(() => {
-              window.location.href = "index.html";
-            }, 500);
+            errorMessage = "Không tìm thấy bài viết để xóa."
+            // Ẩn bài post và hiển thị thông báo lỗi với hiệu ứng mượt mà
+            const postContentElement = document.getElementById("post-content")
+            postContentElement.innerHTML = `
+              <div class="deleted-post-message">
+                <i class="fas fa-exclamation-triangle" style="color: #f44336;"></i>
+                <h3>Không tìm thấy bài viết</h3>
+                <p>Bài viết này có thể đã bị xóa hoặc không tồn tại.</p>
+                <a href="index.html" class="btn btn-primary">Quay lại trang chủ</a>
+              </div>
+            `
             return;
           } else if (error.status === 409) {
             errorMessage = "Không thể xóa bài viết vì có bình luận. Vui lòng xóa tất cả bình luận trước."
@@ -1129,7 +1165,6 @@ async function setupPostDetailActions(post) {
             errorMessage = `Lỗi: ${error.message}`
           }
           
-          alert(errorMessage)
         }
       }
     })
@@ -1364,7 +1399,6 @@ function setupCommentActions(postId) {
       }
       
       if (confirm("Bạn có chắc chắn muốn xóa bình luận này?")) {
-        // Ẩn comment ngay lập tức trước khi gọi API
         commentItem.style.display = "none"
         
         // Cập nhật số lượng comment
@@ -1374,14 +1408,14 @@ function setupCommentActions(postId) {
           commentCountElement.textContent = Math.max(0, currentCount - 1)
         }
         
-                  try {
-            const response = await api.deleteComment(commentId)
-            if (!response.success) {
-              throw new Error(response.message || "Xóa thất bại")
-            }
-          } catch (error) {
-            console.error("Error deleting comment:", error)
+        try {
+          const response = await api.deleteComment(commentId)
+          if (!response.success) {
+            throw new Error(response.message || "Xóa thất bại")
           }
+        } catch (error) {
+          console.error("Error deleting comment:", error)
+        }
       }
     });
   });
