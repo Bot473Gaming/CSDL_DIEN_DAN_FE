@@ -713,19 +713,35 @@ async function submitComment(postId, content, parentCommentId = null) {
         }
 
         const commentId = newCommentDeleteBtn.dataset.id
+        const commentItem = newCommentDeleteBtn.closest(".comment-item")
+        
+        // Kiểm tra xem comment có reply không
+        const repliesContainer = commentItem.querySelector(".replies-container")
+        const hasReplies = repliesContainer && repliesContainer.children.length > 0
+        
+        if (hasReplies) {
+          alert("Không thể xóa bình luận này !")
+          return
+        }
         
         if (confirm("Bạn có chắc chắn muốn xóa bình luận này?")) {
+          // Ẩn comment ngay lập tức trước khi gọi API
+          commentItem.style.display = "none"
+          
+          // Cập nhật số lượng comment
+          const commentCountElement = document.getElementById("comment-count")
+          if (commentCountElement) {
+            const currentCount = parseInt(commentCountElement.textContent || 0)
+            commentCountElement.textContent = Math.max(0, currentCount - 1)
+          }
+          
           try {
             const response = await api.deleteComment(commentId)
-            if (response.success) {
-              alert("Đã xóa bình luận thành công")
-              window.location.reload()
-            } else {
+            if (!response.success) {
               throw new Error(response.message || "Xóa thất bại")
             }
           } catch (error) {
             console.error("Error deleting comment:", error)
-            alert("Đã xảy ra lỗi khi xóa bình luận. Vui lòng thử lại sau.")
           }
         }
       })
@@ -1335,22 +1351,37 @@ function setupCommentActions(postId) {
         return;
       }
 
-      const commentId = button.dataset.id;
+      const commentId = button.dataset.id
+      const commentItem = button.closest(".comment-item")
+      
+      // Kiểm tra xem comment có reply không
+      const repliesContainer = commentItem.querySelector(".replies-container")
+      const hasReplies = repliesContainer && repliesContainer.children.length > 0
+      
+      if (hasReplies) {
+        alert("Không thể xóa bình luận này !")
+        return
+      }
       
       if (confirm("Bạn có chắc chắn muốn xóa bình luận này?")) {
-        try {
-          const response = await api.deleteComment(commentId);
-          if (response.success) {
-            alert("Đã xóa bình luận thành công");
-            // Reload the page to update the list
-            window.location.reload();
-          } else {
-            throw new Error(response.message || "Xóa thất bại");
-          }
-        } catch (error) {
-          console.error("Error deleting comment:", error);
-          alert("Đã xảy ra lỗi khi xóa bình luận. Vui lòng thử lại sau.");
+        // Ẩn comment ngay lập tức trước khi gọi API
+        commentItem.style.display = "none"
+        
+        // Cập nhật số lượng comment
+        const commentCountElement = document.getElementById("comment-count")
+        if (commentCountElement) {
+          const currentCount = parseInt(commentCountElement.textContent || 0)
+          commentCountElement.textContent = Math.max(0, currentCount - 1)
         }
+        
+                  try {
+            const response = await api.deleteComment(commentId)
+            if (!response.success) {
+              throw new Error(response.message || "Xóa thất bại")
+            }
+          } catch (error) {
+            console.error("Error deleting comment:", error)
+          }
       }
     });
   });
