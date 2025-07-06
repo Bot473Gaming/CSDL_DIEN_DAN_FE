@@ -86,6 +86,10 @@ function logout() {
   token = null
   currentUser = null
   updateUI()
+  
+  // Trigger custom event for user change
+  window.dispatchEvent(new CustomEvent('userChanged'));
+  
   window.location.href = "index.html"
 }
 
@@ -119,6 +123,9 @@ async function fetchCurrentUser() {
       currentUser = response.data
       localStorage.setItem("currentUser", JSON.stringify(currentUser))
       updateUI()
+      
+      // Trigger custom event for user change
+      window.dispatchEvent(new CustomEvent('userChanged'));
     } else {
       // If response is not successful, logout
       console.error("Failed to fetch user:", response.message)
@@ -288,6 +295,24 @@ function cleanParams(params) {
     Object.entries(params).filter(([_, v]) => v !== null && v !== undefined && v !== '')
   );
 }
+
+// Calculate total votes for a post
+function calculateTotalVotes(post) {
+  // Nếu có voteCount từ API, sử dụng nó
+  if (post.voteCount !== undefined) {
+    return post.voteCount;
+  }
+  
+  // Nếu không có voteCount, tính tổng từ votes array
+  if (!post.votes || !Array.isArray(post.votes)) {
+    return 0;
+  }
+  
+  return post.votes.reduce((total, vote) => {
+    return total + (vote.voteValue || 0);
+  }, 0);
+}
+
 // Load posts
 async function loadPosts() {
   try {
@@ -379,7 +404,7 @@ async function loadPosts() {
                   <div class="post-meta">
                     <span><i class="fas fa-eye"></i> ${post.viewCount || 0}</span>
                     <span><i class="fas fa-comment"></i> ${post.comments?.length || 0}</span>
-                    <span><i class="fas fa-thumbs-up"></i> ${post.votes?.length || 0}</span>
+                    <span><i class="fas fa-thumbs-up"></i> ${calculateTotalVotes(post)}</span>
                   </div>
                   <div class="post-tags">
                     ${(post.tags || []).map(tag => 
